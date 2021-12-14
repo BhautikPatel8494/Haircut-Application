@@ -3,12 +3,12 @@ import { PassportStrategy } from '@nestjs/passport';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { Model } from 'mongoose';
 
-import { User } from '../../schema/userModel.schema';
+import { Users } from '../../schema/user.schema';
 import { InjectModel } from '@nestjs/mongoose';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-    constructor(@InjectModel('User') private readonly userModel: Model<User>) {
+    constructor(@InjectModel('User') private readonly userModel: Model<Users>) {
         super({
             jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
             ignoreExpiration: false,

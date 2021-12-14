@@ -1,9 +1,7 @@
 import { Schema, SchemaFactory, Prop } from '@nestjs/mongoose';
 import { Schema as MongooseSchema } from 'mongoose';
 
-export type ContactModeltype = Contact & Document;
-
-@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } })
+@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }, collection: 'contacts' })
 export class Contact {
     @Prop({ type: MongooseSchema.Types.ObjectId, required: true })
     user_id: MongooseSchema.Types.ObjectId;

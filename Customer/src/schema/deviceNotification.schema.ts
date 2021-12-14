@@ -1,9 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 
-export type Device_NotificationModelType = Device_notification & Document;
 
-@Schema()
-export class Device_notification {
+@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }, collection: 'device_notifications' })
+export class DeviceNotification {
   @Prop({ type: String, required: true })
   title: string;
 
@@ -12,6 +11,9 @@ export class Device_notification {
 
   @Prop({ type: String, default: '' })
   type: string;
+
+  created_at: string;
+  updated_at: string;
 }
 
-export const DeviceNotificationSchema = SchemaFactory.createForClass(Device_notification);
+export const DeviceNotificationSchema = SchemaFactory.createForClass(DeviceNotification);

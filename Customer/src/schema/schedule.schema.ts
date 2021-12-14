@@ -1,10 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Schema as MongooseSchema } from 'mongoose';
 
-export type ScheduleModelType = Schedule & Document;
-
 @Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } })
-export class ScheduleTimesSchema {
+export class ScheduleTimes {
   @Prop({ type: Boolean, default: true })
   active: boolean;
 
@@ -15,20 +13,24 @@ export class ScheduleTimesSchema {
   end_time: string;
 }
 
+const ScheduleTimeSchema = SchemaFactory.createForClass(ScheduleTimes);
+
 @Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } })
-export class ScheduledDaysSchema {
+export class ScheduleDays {
   @Prop({ type: Number, required: true })
   day: number;
 
   @Prop({ type: Boolean, default: true })
   active: boolean;
 
-  @Prop()
-  scheduled_times: [ScheduleTimesSchema];
+  @Prop({ type: [ScheduleTimeSchema], default: [] })
+  scheduled_times: [ScheduleTimes];
 }
 
-@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } })
-export class Schedule {
+const ScheduleDaysSchema = SchemaFactory.createForClass(ScheduleDays);
+
+@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }, collection: 'schedules' })
+export class Schedules {
   @Prop({ type: String, required: true })
   schedule_type: string;
 
@@ -45,8 +47,11 @@ export class Schedule {
   @Prop({ type: Number })
   week: number;
 
-  @Prop()
-  scheduled_days: [ScheduledDaysSchema];
+  @Prop({ type: [ScheduleDaysSchema], default: [] })
+  scheduled_days: [ScheduleDays];
+
+  created_at: string;
+  updated_at: string;
 }
 
-export const ScheduleSchema = SchemaFactory.createForClass(Schedule);
+export const ScheduleSchema = SchemaFactory.createForClass(Schedules);

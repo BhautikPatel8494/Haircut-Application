@@ -1,17 +1,17 @@
 import { Module } from "@nestjs/common";
 import { MongooseModule } from "@nestjs/mongoose";
-import { Customer_CartSchema } from "../schema/cartModel.schema";
-import { CategoriesSchema } from "../schema/categoryModel.schema";
-import { Customer_TransactionSchema } from "../schema/customerTransaction.schema";
+import { CustomerCartSchema } from "../schema/customerCart.schema";
+import { CategoriesSchema } from "../schema/categories.schema";
+import { CustomerTransactionSchema } from "../schema/customerTransaction.schema";
 import { CustomServiceSchema } from "../schema/customService.schema";
-import { FavouriteSchema } from "../schema/favouriteModel.schema";
-import { ConfigSchema } from "../schema/globalSettings.schema";
-import { LocationSchema } from "../schema/locationModel.schema";
-import { OrderSchema } from "../schema/orderModel.schema";
-import { ScheduleSchema } from "../schema/scheduleModel.schema";
-import { ServiceSchema } from "../schema/serviceModel.schema";
-import { Service_ProviderSchema } from "../schema/serviceProvider.schema";
-import { UserSchema } from "../schema/userModel.schema";
+import { FavouriteSchema } from "../schema/favourite.schema";
+import { ConfigSchema } from "../schema/config.schema";
+import { LocationSchema } from "../schema/location.schema";
+import { OrderSchema } from "../schema/order.schema";
+import { ScheduleSchema } from "../schema/schedule.schema";
+import { ServiceSchema } from "../schema/service.schema";
+import { ServiceProviderSchema } from "../schema/serviceProvider.schema";
+import { UserSchema } from "../schema/user.schema";
 import { ApiResponse } from "../utils/apiResponse.service";
 import { Utility } from "../utils/utility.service";
 import { HomeController } from "./home.controller";
@@ -20,13 +20,13 @@ import { HomeService } from "./home.service";
 @Module({
     imports: [MongooseModule.forFeature([
         { name: 'User', schema: UserSchema },
-        { name: 'Service_Provider', schema: Service_ProviderSchema },
-        { name: 'Customer_Cart', schema: Customer_CartSchema },
+        { name: 'ServiceProvider', schema: ServiceProviderSchema },
+        { name: 'CustomerCart', schema: CustomerCartSchema },
         { name: 'Order', schema: OrderSchema },
-        { name: 'Customer_Transaction', schema: Customer_TransactionSchema },
+        { name: 'CustomerTransaction', schema: CustomerTransactionSchema },
         { name: 'Categories', schema: CategoriesSchema },
         { name: 'Service', schema: ServiceSchema },
-        { name: 'Custom_Service', schema: CustomServiceSchema },
+        { name: 'CustomService', schema: CustomServiceSchema },
         { name: 'Favourite', schema: FavouriteSchema },
         { name: 'Locations', schema: LocationSchema },
         { name: 'Schedule', schema: ScheduleSchema },

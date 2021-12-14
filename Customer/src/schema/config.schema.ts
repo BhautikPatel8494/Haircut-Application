@@ -1,9 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 
-export type ConfigModelType = Config & Document;
-
 @Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } })
-export class ScheduleSchema {
+export class Schedules {
   @Prop({ type: Number })
   day: number;
 
@@ -17,8 +15,10 @@ export class ScheduleSchema {
   disable: number;
 }
 
-@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } })
-export class Config {
+const ScheduleSchema = SchemaFactory.createForClass(Schedules);
+
+@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }, collection: 'configs' })
+export class Configs {
   @Prop({ type: Number, default: 0 })
   customer_stylist_radius: number;
 
@@ -52,8 +52,8 @@ export class Config {
   @Prop({ type: Object })
   stylist: object;
 
-  @Prop({ type: Array })
-  schedule: [ScheduleSchema];
+  @Prop({ type: [ScheduleSchema], default: [] })
+  schedule: [Schedules];
 }
 
-export const ConfigSchema = SchemaFactory.createForClass(Config);
+export const ConfigSchema = SchemaFactory.createForClass(Configs);

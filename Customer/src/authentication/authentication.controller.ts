@@ -42,4 +42,14 @@ export class AuthenticationController {
     async makeProfileDefault(@CurrentUser() user: CurrentUserDto, @Req() req: Request, @Res() res: Response) {
         return await this.authenticationService.makeProfileDefault(user, req, res);
     }
+
+    @Get('get-profile')
+    async getProfile(@CurrentUser() user: CurrentUserDto, @Res() res: Response) {
+        return await this.authenticationService.getProfile(user, res);
+    }
+
+    @Post('booking-listing')
+    async bookingListing(@CurrentUser() user: CurrentUserDto, @Req() req: Request, @Res() res: Response) {
+        return await this.authenticationService.bookingListing(user, req, res);
+    }
 }

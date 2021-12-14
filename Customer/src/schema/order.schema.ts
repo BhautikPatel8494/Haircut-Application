@@ -1,10 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Schema as MongooseSchema } from 'mongoose';
 
-export type OrderModelType = Order & Document;
-
 @Schema()
-export class addOnSchema {
+class addOns {
   @Prop({ type: MongooseSchema.Types.ObjectId })
   service_id: MongooseSchema.Types.ObjectId;
 
@@ -24,8 +22,10 @@ export class addOnSchema {
   quantity: number;
 }
 
-@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } })
-export class Order {
+const addOnSchema = SchemaFactory.createForClass(addOns)
+
+@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }, collection: 'orders' })
+export class Orders {
   @Prop({ type: String, required: true })
   order_number: string;
 
@@ -76,8 +76,8 @@ export class Order {
   @Prop({ type: Object, required: true })
   active_location: object;
 
-  @Prop()
-  add_ons: [addOnSchema];
+  @Prop({ type: [addOnSchema], default: [] })
+  add_ons: [addOns];
 
   @Prop({ type: Number, enum: [0, 1], default: 0 })
   booking_type: number;
@@ -117,6 +117,9 @@ export class Order {
 
   @Prop()
   expired_at: string;
+
+  created_at: string;
+  updated_at: string;
 }
 
-export const OrderSchema = SchemaFactory.createForClass(Order);
+export const OrderSchema = SchemaFactory.createForClass(Orders);

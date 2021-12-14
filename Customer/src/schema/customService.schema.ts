@@ -1,10 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Schema as MongooseSchema } from 'mongoose';
 
-export type CustomServiceType = Custom_service & Document;
-
-@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } })
-export class Custom_service {
+@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }, collection: 'custom_services' })
+export class CustomServices {
   @Prop({ type: String, required: true, unique: true })
   title: string;
 
@@ -54,6 +52,9 @@ export class Custom_service {
 
   @Prop({ type: Boolean, default: true })
   editable: boolean;
+
+  created_at: string;
+  updated_at: string;
 }
 
-export const CustomServiceSchema = SchemaFactory.createForClass(Custom_service);
+export const CustomServiceSchema = SchemaFactory.createForClass(CustomServices);

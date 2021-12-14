@@ -4,38 +4,38 @@ import { Request, Response } from "express";
 import { Model, Types } from "mongoose";
 import * as moment from 'moment'
 
-import { Categories } from "../schema/categoryModel.schema";
+import { Categories } from "../schema/categories.schema";
 import { constants, WEEKDAY_LIST } from '../utils/constant'
 import { ApiResponse } from "../utils/apiResponse.service"
-import { Service_Provider } from "../schema/serviceProvider.schema";
-import { Config } from "../schema/globalSettings.schema";
+import { Configs } from "../schema/config.schema";
 import { CurrentUserDto } from "./dto/currentUser";
-import { User } from "../schema/userModel.schema";
-import { Locations } from "../schema/locationModel.schema";
-import { Service } from "../schema/serviceModel.schema";
-import { Customer_Cart } from "../schema/cartModel.schema";
-import { Favourite } from "../schema/favouriteModel.schema";
-import { Custom_service } from "../schema/customService.schema";
-import { Order } from "../schema/orderModel.schema";
-import { Customer_Transaction } from "../schema/customerTransaction.schema";
-import { Schedule } from "../schema/scheduleModel.schema";
+import { Users } from "../schema/user.schema";
+import { Locations } from "../schema/location.schema";
+import { Services } from "../schema/service.schema";
+import { CustomerCarts } from "../schema/customerCart.schema";
+import { Favourites } from "../schema/favourite.schema";
+import { CustomServices } from "../schema/customService.schema";
+import { Orders } from "../schema/order.schema";
+import { Schedules } from "../schema/schedule.schema";
 import { Utility } from "../utils/utility.service";
+import { CustomerTransactions } from "../schema/customerTransaction.schema";
+import { ServiceProviders } from "../schema/serviceProvider.schema";
 
 @Injectable()
 export class HomeService {
     constructor(
-        @InjectModel('User') private readonly userModel: Model<User>,
-        @InjectModel('Service_Provider') private readonly serviceProviderModel: Model<Service_Provider>,
-        @InjectModel('Customer_Cart') private readonly customerCartModel: Model<Customer_Cart>,
-        @InjectModel('Order') private readonly orderModel: Model<Order>,
-        @InjectModel('Customer_Transaction') private readonly customerTransactionModel: Model<Customer_Transaction>,
+        @InjectModel('User') private readonly userModel: Model<Users>,
+        @InjectModel('ServiceProvider') private readonly serviceProviderModel: Model<ServiceProviders>,
+        @InjectModel('CustomerCart') private readonly customerCartModel: Model<CustomerCarts>,
+        @InjectModel('Order') private readonly orderModel: Model<Orders>,
+        @InjectModel('CustomerTransaction') private readonly customerTransactionModel: Model<CustomerTransactions>,
         @InjectModel('Categories') private readonly categoryModel: Model<Categories>,
-        @InjectModel('Service') private readonly serviceModel: Model<Service>,
-        @InjectModel('Custom_Service') private readonly customServiceModel: Model<Custom_service>,
-        @InjectModel('Favourite') private readonly favouriteModel: Model<Favourite>,
+        @InjectModel('Service') private readonly serviceModel: Model<Services>,
+        @InjectModel('CustomService') private readonly customServiceModel: Model<CustomServices>,
+        @InjectModel('Favourite') private readonly favouriteModel: Model<Favourites>,
         @InjectModel('Locations') private readonly locationModel: Model<Locations>,
-        @InjectModel('Schedule') private readonly scheduleModel: Model<Schedule>,
-        @InjectModel('Config') private readonly configModel: Model<Config>,
+        @InjectModel('Schedule') private readonly scheduleModel: Model<Schedules>,
+        @InjectModel('Config') private readonly configModel: Model<Configs>,
         private readonly apiResponse: ApiResponse,
         private readonly utility: Utility
     ) { }

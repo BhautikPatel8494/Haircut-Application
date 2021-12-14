@@ -1,10 +1,8 @@
 import { Schema, SchemaFactory, Prop } from '@nestjs/mongoose';
 import { Schema as MongooseSchema } from 'mongoose';
 
-export type CartModeltype = Customer_Cart & Document;
-
 @Schema()
-export class CartItemSchema {
+export class CartItems {
   @Prop({ type: MongooseSchema.Types.ObjectId, required: true })
   service_id: MongooseSchema.Types.ObjectId;
 
@@ -27,8 +25,10 @@ export class CartItemSchema {
   quantity: number;
 }
 
+const CartItemSchema = SchemaFactory.createForClass(CartItems);
+
 @Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } })
-export class CartProfileSchema {
+export class CartProfiles {
   @Prop({ type: String, required: true })
   firstname: string;
 
@@ -44,12 +44,14 @@ export class CartProfileSchema {
   @Prop({ type: String, required: true })
   user_type: string;
 
-  @Prop()
-  cart_items: [CartItemSchema];
+  @Prop({ type: [CartItemSchema], default: [] })
+  cart_items: [CartItems];
 }
 
+const CartProfileSchema = SchemaFactory.createForClass(CartProfiles);
+
 @Schema()
-export class BillDetailSchema {
+export class BillDetails {
   @Prop({ type: Number, default: 0 })
   total_service: number;
 
@@ -75,8 +77,10 @@ export class BillDetailSchema {
   total_bill: number;
 }
 
-@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } })
-export class Customer_Cart {
+const BillDetailSchema = SchemaFactory.createForClass(BillDetails);
+
+@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }, collection: 'customer_carts' })
+export class CustomerCarts {
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'users', required: true })
   user_id: MongooseSchema.Types.ObjectId;
 
@@ -95,11 +99,14 @@ export class Customer_Cart {
   @Prop({ type: String, enum: ["simple-service", "custom-service"], default: "simple-service" })
   service_type: string;
 
-  @Prop()
-  cart_profiles: [CartProfileSchema];
+  @Prop({ tyep: CartProfileSchema, default: [] })
+  cart_profiles: [CartProfiles];
 
-  @Prop()
-  bill_details: BillDetailSchema;
+  @Prop({ type: BillDetailSchema, default: {} })
+  bill_details: BillDetails;
+
+  created_at: string;
+  updated_at: string;
 }
 
-export const Customer_CartSchema = SchemaFactory.createForClass(Customer_Cart);
+export const CustomerCartSchema = SchemaFactory.createForClass(CustomerCarts);

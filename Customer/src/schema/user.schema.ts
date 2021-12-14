@@ -1,9 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Schema as MongooseSchema } from 'mongoose';
 
-export type UserModelType = User & Document
-
-@Schema()
+@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } })
 class FamilyMembers {
   _id: string;
 
@@ -32,16 +30,16 @@ class FamilyMembers {
   @Prop({ type: Boolean, default: false })
   default_profile: boolean;
 
-  @Prop({ type: String, default: new Date().getTime() })
   created_at: string
-
-  @Prop({ type: String, default: new Date().getTime() })
   updated_at: string
 }
 
+const FamilyMemberSchema = SchemaFactory.createForClass(FamilyMembers);
 
 @Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } })
 export class Addresses {
+  _id: string;
+
   @Prop({ type: String, required: true })
   address: string;
 
@@ -57,8 +55,9 @@ export class Addresses {
   @Prop({ type: String, required: true })
   lng: string;
 
+
   @Prop({ type: Object })
-  location: {
+  live_location: {
     type: string;
     coordinates: []
   };
@@ -82,10 +81,12 @@ export class Addresses {
   active: boolean;
 }
 
+const AddressSchema = SchemaFactory.createForClass(Addresses);
+
 @Schema()
 class BlockStylists {
   @Prop({ type: MongooseSchema.Types.ObjectId })
-  stylist_id: MongooseSchema.Types.ObjectId;
+  stylist_id: string;
 
   @Prop({ type: String })
   name: string;
@@ -100,17 +101,18 @@ class BlockStylists {
   experience: string;
 }
 
-const AddressSchema = SchemaFactory.createForClass(Addresses);
-const FamilyMemberSchema = SchemaFactory.createForClass(FamilyMembers);
 const BlockStylistSchema = SchemaFactory.createForClass(BlockStylists);
 
-@Schema()
-export class User {
+@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } })
+export class Users {
   @Prop({ type: String, required: true })
   firstname: string;
 
   @Prop({ type: String, required: true })
   lastname: string;
+
+  @Prop({ type: String, required: true })
+  middlename: string;
 
   @Prop({ type: String, required: true, unique: true })
   email: string;
@@ -135,6 +137,12 @@ export class User {
 
   @Prop({ type: Date })
   dob: Date;
+
+  @Prop({ type: Object })
+  register_location: {
+    type: string;
+    coordinates: []
+  };
 
   @Prop({ type: Array, default: [] })
   preference: [];
@@ -186,6 +194,9 @@ export class User {
 
   @Prop({ type: Array, default: [] })
   devices: [];
+
+  created_at: string
+  updated_at: string
 }
 
-export const UserSchema = SchemaFactory.createForClass(User);
+export const UserSchema = SchemaFactory.createForClass(Users);
