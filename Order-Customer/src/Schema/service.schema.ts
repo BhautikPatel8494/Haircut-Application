@@ -1,10 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Schema as MongooseSchema } from 'mongoose';
 
-export type ServiceModelType = Service & Document;
-
-@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } })
-export class Service {
+@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }, collection: 'services' })
+export class Services {
   @Prop({ type: String, required: true, unique: true })
   title: string;
 
@@ -83,4 +81,4 @@ export class Service {
   seo_index: [];
 }
 
-export const ServiceSchema = SchemaFactory.createForClass(Service);
+export const ServiceSchema = SchemaFactory.createForClass(Services);

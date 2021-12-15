@@ -1,10 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Schema as MongooseSchema } from 'mongoose';
 
-export type UserModelType = User & Document
-
 @Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } })
-export class famaliyMemberSchema {
+class FamilyMembers {
   _id: string;
 
   @Prop({ type: String, required: true })
@@ -31,10 +29,17 @@ export class famaliyMemberSchema {
 
   @Prop({ type: Boolean, default: false })
   default_profile: boolean;
+
+  created_at: string
+  updated_at: string
 }
 
+const FamilyMemberSchema = SchemaFactory.createForClass(FamilyMembers);
+
 @Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } })
-export class addressSchema {
+export class Addresses {
+  _id: string;
+
   @Prop({ type: String, required: true })
   address: string;
 
@@ -51,7 +56,7 @@ export class addressSchema {
   lng: string;
 
   @Prop({ type: Object })
-  location: {
+  live_location: {
     type: string;
     coordinates: []
   };
@@ -75,10 +80,12 @@ export class addressSchema {
   active: boolean;
 }
 
+const AddressSchema = SchemaFactory.createForClass(Addresses);
+
 @Schema()
-export class BlockStylistSchema {
+class BlockStylists {
   @Prop({ type: MongooseSchema.Types.ObjectId })
-  stylist_id: MongooseSchema.Types.ObjectId;
+  stylist_id: string;
 
   @Prop({ type: String })
   name: string;
@@ -93,13 +100,53 @@ export class BlockStylistSchema {
   experience: string;
 }
 
-@Schema()
-export class User {
+const BlockStylistSchema = SchemaFactory.createForClass(BlockStylists);
+
+@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } })
+class Cards {
+  @Prop({ type: String, default: null })
+  type: string;
+
+  @Prop({ type: String, default: null })
+  logo: string;
+
+  @Prop({ type: String, default: null })
+  lastd: string;
+
+  @Prop({ type: String, default: null })
+  customerId: string;
+
+  @Prop({ type: String, default: null })
+  exp_month: string;
+
+  @Prop({ type: String, default: null })
+  exp_year: string;
+
+  @Prop({ type: String, default: null })
+  account_holder_name: string;
+
+  @Prop({ type: String, default: null })
+  zip_code: string;
+
+  @Prop({ type: Boolean, default: false })
+  isDefault: boolean;
+
+  created_at: string;
+  updated_at: string;
+}
+
+const CardSchema = SchemaFactory.createForClass(Cards);
+
+@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } })
+export class Users {
   @Prop({ type: String, required: true })
   firstname: string;
 
   @Prop({ type: String, required: true })
   lastname: string;
+
+  @Prop({ type: String, required: true })
+  middlename: string;
 
   @Prop({ type: String, required: true, unique: true })
   email: string;
@@ -125,6 +172,12 @@ export class User {
   @Prop({ type: Date })
   dob: Date;
 
+  @Prop({ type: Object })
+  register_location: {
+    type: string;
+    coordinates: []
+  };
+
   @Prop({ type: Array, default: [] })
   preference: [];
 
@@ -138,11 +191,11 @@ export class User {
   })
   user_type: string;
 
-  @Prop()
-  addresses: [addressSchema];
+  @Prop({ type: [AddressSchema], default: [] })
+  addresses: [Addresses];
 
-  @Prop()
-  family_members: [famaliyMemberSchema];
+  @Prop({ type: [FamilyMemberSchema], default: [] })
+  family_members: [FamilyMembers];
 
   @Prop({ type: Number, default: 0 })
   number_of_bookings: number;
@@ -150,31 +203,23 @@ export class User {
   @Prop({ type: Number, default: 0 })
   wallet_balance: number;
 
-  @Prop()
-  blocked_stylist: [BlockStylistSchema];
+  @Prop({ type: [BlockStylistSchema], default: [] })
+  blocked_stylist: [BlockStylists];
 
-  @Prop()
-  cards: [
-    {
-      type: { type: string };
-      logo: { type: string };
-      lastd: { type: string };
-      customerId: { type: string };
-      exp_month: { type: string };
-      exp_year: { type: string };
-      account_holder_name: { type: string };
-      zip_code: { type: string };
-      isDefault: { type: boolean; default: false };
-      createdAt: { type: Date };
-      updatedAt: { type: Date };
-    },
-  ];
+  @Prop({ type: [CardSchema], default: [] })
+  cards: [Cards];
 
   @Prop({ type: Boolean, default: true })
   status: boolean;
 
   @Prop({ type: Array, default: [] })
-  devices: [];
+  devices: [{
+    device: string;
+    token: string;
+  }];
+
+  created_at: string
+  updated_at: string
 }
 
-export const UserSchema = SchemaFactory.createForClass(User);
+export const UserSchema = SchemaFactory.createForClass(Users);

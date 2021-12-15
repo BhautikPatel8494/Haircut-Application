@@ -1,10 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Schema as MongooseSchema } from 'mongoose';
 
-export type Service_ProviderModelType = Service_Provider & Document;
-
-@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } })
-export class Service_Provider {
+@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }, collection: 'service_providers' })
+export class ServiceProviders {
 
   @Prop({ type: String, required: true })
   firstname: string;
@@ -225,4 +223,4 @@ export class Service_Provider {
   active_schedule_type: string;
 }
 
-export const Service_ProviderSchema = SchemaFactory.createForClass(Service_Provider);
+export const ServiceProviderSchema = SchemaFactory.createForClass(ServiceProviders);

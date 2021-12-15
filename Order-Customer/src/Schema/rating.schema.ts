@@ -1,10 +1,8 @@
 import { Schema, SchemaFactory, Prop } from '@nestjs/mongoose';
 import { Schema as MongooseSchema } from 'mongoose';
 
-export type ContactModeltype = ContactModel & Document;
-
-@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } })
-export class ContactModel {
+@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }, collection: 'ratings' })
+export class Ratings {
     @Prop({ type: MongooseSchema.Types.ObjectId, required: true })
     user_id: MongooseSchema.Types.ObjectId;
 
@@ -31,6 +29,9 @@ export class ContactModel {
 
     @Prop({ type: String, default: null })
     message: string
+
+    created_at: string;
+    updated_at: string;
 }
 
-export const ContactSchema = SchemaFactory.createForClass(ContactModel);
+export const RatingSchema = SchemaFactory.createForClass(Ratings);

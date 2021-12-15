@@ -1,10 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Schema as MongooseSchema } from 'mongoose';
 
-export type NotificationModelType = NotificationModel & Document;
-
-@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } })
-export class NotificationModel {
+@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }, collection: 'notifications' })
+export class Notifications {
   @Prop()
   user: {
     user_id: { type: MongooseSchema.Types.ObjectId };
@@ -33,6 +31,9 @@ export class NotificationModel {
     required: true,
   })
   type: string;
+
+  created_at: string;
+  updated_at: string;
 }
 
-export const NotificationModelSchema = SchemaFactory.createForClass(NotificationModel);
+export const NotificationSchema = SchemaFactory.createForClass(Notifications);

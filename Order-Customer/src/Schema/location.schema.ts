@@ -1,8 +1,6 @@
 import { Schema, SchemaFactory, Prop } from '@nestjs/mongoose';
 
-export type LocationModeltype = Locations & Document;
-
-@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } })
+@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }, collection: 'locations' })
 export class Locations {
     @Prop({ type: String, required: true, unique: true })
     location_name: string;
@@ -30,6 +28,9 @@ export class Locations {
 
     @Prop({ type: Boolean, default: false })
     deleted: boolean;
+
+    created_at: string;
+    updated_at: string;
 }
 
 export const LocationSchema = SchemaFactory.createForClass(Locations);
