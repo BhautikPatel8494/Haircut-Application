@@ -23,7 +23,7 @@ export class CartOrderService {
     private apiResponse: ApiResponse,
   ) { }
 
-  async getCartLocationStylistAndCat(cart_id) {
+  async getCartLocationStylistAndCat(cart_id: string) {
     return this.customerCartModel.aggregate([{ $match: { _id: cart_id } },
     {
       $lookup: {
@@ -78,7 +78,7 @@ export class CartOrderService {
     ]);
   }
 
-  async updateCartTotalDetails(userId) {
+  async updateCartTotalDetails(userId: string) {
     const cart = await this.customerCartModel.findOne({ user_id: userId });
     if (cart) {
       let totalService = 0;

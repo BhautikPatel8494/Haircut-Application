@@ -41,26 +41,19 @@ export class BookingOrderService {
     private utilityService: UtilityService,
   ) { }
 
-  async createChargeDirectOrder(data, callback) {
+  async createChargeDirectOrder(amount: number, customerId: string) {
     const stripe = new Stripe(process.env.STRIPE_SANDBOX_KEY, { apiVersion: '2020-08-27' });
-    let amount = 0;
-    if (data.cost > 0) {
-      amount = data.cost * 100;
-    } else {
-      callback({ message: 'amount must me greater than 0' }, null);
-      return;
-    }
-    stripe.charges.create({
+    return stripe.charges.create({
       amount: amount,
       currency: 'usd',
-      customer: data.customerId,
-    }, callback);
+      customer: customerId,
+    });
   }
 
-  async createCharge(amount, stripe_customer_id) {
+  async createCharge(amount: number, stripe_customer_id: string) {
     const stripe = new Stripe(process.env.STRIPE_SANDBOX_KEY, { apiVersion: '2020-08-27' });
     const charge = await stripe.charges.create({
-      amount: parseInt(amount) * 100,
+      amount: amount * 100,
       currency: 'usd',
       customer: stripe_customer_id,
       capture: false,
@@ -68,13 +61,13 @@ export class BookingOrderService {
     return charge;
   }
 
-  async capturePayment(chargeId) {
+  async capturePayment(chargeId: string) {
     const stripe = new Stripe(process.env.STRIPE_SANDBOX_KEY, { apiVersion: '2020-08-27' });
     const capturePaymentIntent = await stripe.charges.capture(chargeId);
     return capturePaymentIntent;
   }
 
-  async createTransaction(message, amount, user_id, transaction_type) {
+  async createTransaction(message: string, amount: number, user_id: string, transaction_type: string) {
     let transaction = await this.customerTransaction.create({
       user_id,
       amount,
@@ -85,7 +78,7 @@ export class BookingOrderService {
     return transaction;
   }
 
-  async createPaymentTransaction(message, amount, user_id, transaction_type) {
+  async createPaymentTransaction(message: string, amount: number, user_id: string, transaction_type: string) {
     let transaction = await this.customerTransaction.create({
       user_id,
       amount,
@@ -553,8 +546,8 @@ export class BookingOrderService {
           stripe_customer_id: stripe_customer_id,
         };
       }
-      let booking = await this.orderModel.findOne(query, { _id: 1 });
-      if (booking) {
+      let bookingOrder = await this.orderModel.findOne(query, { _id: 1 });
+      if (bookingOrder) {
         return this.apiResponse.ErrorResponseWithoutData(res, 'This time slot is already selected by someone else');
       }
       let cardCustomer = user.cards.find((elem) => elem.isDefault)
@@ -571,72 +564,72 @@ export class BookingOrderService {
         card_amount_used: cardAmountUsed,
       };
 
-      this.createChargeDirectOrder({ cost: cart.bill_details.total_bill, customerId: cardCustomer.customerId },
-        async (err, result) => {
-          if (err) {
-            return this.apiResponse.ErrorResponseWithoutData(res, err.message);
-          }
-          let createdObj = {};
-          if (from_time && to_time) {
-            createdObj = {
-              order_number: 'HST-' + Date.now(),
-              user_id: userAuth._id,
-              cart: cart.cart_profiles,
-              booking_type: booking_type,
-              bill_details: totalBillDetail,
-              date: date,
-              selected_slot: { from_time: from_time, to_time: to_time },
-              stylist_id: stylist_id,
-              direct_order: 1,
-              active_location: activeLocation,
-              stripe_customer_id: stripe_customer_id ? stripe_customer_id : '',
-              charge_id: result.id ? result.id : '',
-              created_at: Date.now(),
-            };
-          } else {
-            createdObj = {
-              order_number: 'HST-' + Date.now(),
-              user_id: userAuth._id,
-              cart: cart.cart_profiles,
-              booking_type: booking_type,
-              bill_details: totalBillDetail,
-              stylist_id: stylist_id,
-              direct_order: 1,
-              active_location: activeLocation,
-              stripe_customer_id: stripe_customer_id ? stripe_customer_id : '',
-              charge_id: result.id ? result.id : '',
-              created_at: Date.now(),
-            };
-          }
-          const booking = await this.orderModel.create(createdObj);
-          let notify = {};
-          if (booking._id) {
-            notify = await this.deviceNotification.findOne({ type: 'customer_booking' });
-          }
-          let data = {
-            lat: activeAdress.lat,
-            lng: activeAdress.lng,
-            city: activeAdress.city,
-            full_name: user.firstname || user.lastname ? user.firstname + ' ' + user.lastname : '',
-            profile: user.profile ? CUSTOMER_PROFILE + user.profile : null,
-            stylist_level: cart.stylist_type,
-            booking_type: 'Custom Order',
-            created_at: `${booking.created_at}`,
-            token: user.devices[0] ? user.devices[0].token : '',
-            type: user.devices[0] ? user.devices[0].type : '',
-            user_id: userAuth._id,
-            is_custom: true,
-            stylist_id: stylist_id,
-            notification_type: 'on_custom_booking',
-            total_price: `${cart.bill_details.total_bill}`,
-            order_id: booking._id ? booking._id : null,
-          };
-          let resultBooking = { _id: booking._id };
+      let amount = 0;
+      if (cart.bill_details.total_bill > 0) {
+        amount = cart.bill_details.total_bill * 100;
+      } else {
+        return this.apiResponse.ErrorResponseWithoutData(res, 'amount must me greater than 0');
+      }
+      const result = await this.createChargeDirectOrder(amount, cardCustomer.customerId)
+      let createdObj = {};
+      if (from_time && to_time) {
+        createdObj = {
+          order_number: 'HST-' + Date.now(),
+          user_id: userAuth._id,
+          cart: cart.cart_profiles,
+          booking_type: booking_type,
+          bill_details: totalBillDetail,
+          date: date,
+          selected_slot: { from_time: from_time, to_time: to_time },
+          stylist_id: stylist_id,
+          direct_order: 1,
+          active_location: activeLocation,
+          stripe_customer_id: stripe_customer_id ? stripe_customer_id : '',
+          charge_id: result.id ? result.id : '',
+          created_at: Date.now(),
+        };
+      } else {
+        createdObj = {
+          order_number: 'HST-' + Date.now(),
+          user_id: userAuth._id,
+          cart: cart.cart_profiles,
+          booking_type: booking_type,
+          bill_details: totalBillDetail,
+          stylist_id: stylist_id,
+          direct_order: 1,
+          active_location: activeLocation,
+          stripe_customer_id: stripe_customer_id ? stripe_customer_id : '',
+          charge_id: result.id ? result.id : '',
+          created_at: Date.now(),
+        };
+      }
+      const booking = await this.orderModel.create(createdObj);
+      let notify = {};
+      if (booking._id) {
+        notify = await this.deviceNotification.findOne({ type: 'customer_booking' });
+      }
+      let data = {
+        lat: activeAdress.lat,
+        lng: activeAdress.lng,
+        city: activeAdress.city,
+        full_name: user.firstname || user.lastname ? user.firstname + ' ' + user.lastname : '',
+        profile: user.profile ? CUSTOMER_PROFILE + user.profile : null,
+        stylist_level: cart.stylist_type,
+        booking_type: 'Custom Order',
+        created_at: `${booking.created_at}`,
+        token: user.devices[0] ? user.devices[0].token : '',
+        type: user.devices[0] ? user.devices[0].type : '',
+        user_id: userAuth._id,
+        is_custom: true,
+        stylist_id: stylist_id,
+        notification_type: 'on_custom_booking',
+        total_price: `${cart.bill_details.total_bill}`,
+        order_id: booking._id ? booking._id : null,
+      };
+      let resultBooking = { _id: booking._id };
 
-          await this.utilityService.sendNotificationToNearbyStylist(data);
-          return this.apiResponse.successResponseWithData(res, 'Booking created!', resultBooking);
-        },
-      );
+      await this.utilityService.sendNotificationToNearbyStylist(data);
+      return this.apiResponse.successResponseWithData(res, 'Booking created!', resultBooking);
     } catch (e) {
       return this.apiResponse.ErrorResponseWithoutData(res, e.message);
     }
@@ -738,7 +731,7 @@ export class BookingOrderService {
     }
   }
 
-  async reBookingOrder(rebookingOrder: RebookingOrderDto, userAuth:CurrentUserDto, res: Response) {
+  async reBookingOrder(rebookingOrder: RebookingOrderDto, userAuth: CurrentUserDto, res: Response) {
     try {
       const { order_id, stripe_customer_id, date, from_time, to_time } = rebookingOrder;
       const user = await this.orderModel.findOne({ _id: order_id },

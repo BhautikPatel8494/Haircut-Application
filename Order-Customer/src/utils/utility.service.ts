@@ -11,6 +11,7 @@ import { Orders } from 'src/Schema/order.schema';
 import { Users } from 'src/Schema/user.schema';
 import { Configs } from 'src/Schema/config.schema';
 import { ServiceProviders } from 'src/Schema/serviceProvider.schema';
+import { SendNotification } from './type';
 
 @Injectable()
 export class UtilityService {
@@ -22,7 +23,7 @@ export class UtilityService {
     @InjectModel('notifications') private readonly notificationModel: Model<Notifications>,
   ) { }
 
-  async sendNotificationToNearbyStylist(data) {
+  async sendNotificationToNearbyStylist(data:SendNotification) {
     let query;
 
     if (data.stylist_id) {

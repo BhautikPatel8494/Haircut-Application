@@ -6,7 +6,6 @@ import { BookingOrderService } from './bookingOrder.service';
 import { CancleOrderDto, ChangeStatusDto, ConfirmOtpServiceDto, CreateDirectOrderDto, CreateOrderDto, FilterDto, RebookingOrderDto } from './bookingOrder.dto';
 import { CurrentUserDto } from 'src/authentication/authentication.dto';
 
-
 @Controller('api')
 export class BookingOrderController {
   constructor(private readonly bookingOrderService: BookingOrderService) { }
