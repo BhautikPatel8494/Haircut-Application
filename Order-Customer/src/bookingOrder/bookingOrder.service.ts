@@ -1,18 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { Response } from 'express';
 import * as moment from 'moment';
 import Stripe from 'stripe';
 import axios from 'axios';
 
-import { ApiResponse } from 'src/utils/apiResponse.service';
-import { UtilityService } from 'src/utils/utility.service';
 import {
   CUSTOMER_PROFILE,
   ORDER_RESCHEDULE_COUNT,
   WEEKDAY_LIST,
 } from 'src/utils/constant';
-import { Request, Response } from 'express';
+import { UtilityService } from 'src/utils/utility.service';
+import { ApiResponse } from 'src/utils/apiResponse.service';
 import { ServiceProviders } from 'src/Schema/serviceProvider.schema';
 import { CancellationRule } from 'src/Schema/cancellationRule.schema';
 import { CustomerTransactions } from 'src/Schema/customerTransaction.schema';
@@ -22,6 +22,8 @@ import { Orders } from 'src/Schema/order.schema';
 import { Users } from 'src/Schema/user.schema';
 import { CustomerCarts } from 'src/Schema/customerCart.schema';
 import { DeviceNotification } from 'src/Schema/deviceNotification.schema';
+import { CancleOrderDto, ChangeStatusDto, ConfirmOtpServiceDto, CreateDirectOrderDto, CreateOrderDto, FilterDto, RebookingOrderDto } from './bookingOrder.dto';
+import { CurrentUserDto } from 'src/authentication/authentication.dto';
 
 @Injectable()
 export class BookingOrderService {
@@ -94,14 +96,15 @@ export class BookingOrderService {
     return transaction;
   }
 
-  async checkStylistAvailabel(req: Request, res: Response) {
+  async checkStylistAvailabel(filterBody: FilterDto, res: Response) {
     try {
-      const stylistInfo = await this.serviceProvider.findOne({ _id: req.body.stylist_id }, { active_schedule_type: 1 });
+      const { stylist_id, date, start_time, end_time } = filterBody;
+      const stylistInfo = await this.serviceProvider.findOne({ _id: stylist_id }, { active_schedule_type: 1 });
       if (stylistInfo) {
-        const bookingInfo = await this.orderModel.find({ stylist_id: req.body.stylist_id, booking_status: { $in: [1, 2, 3, 5] } });
-        const scheduleInfo = await this.schedules.findOne({ stylist_id: req.body.stylist_id, schedule_type: stylistInfo.active_schedule_type });
+        const bookingInfo = await this.orderModel.find({ stylist_id: stylist_id, booking_status: { $in: [1, 2, 3, 5] } });
+        const scheduleInfo = await this.schedules.findOne({ stylist_id: stylist_id, schedule_type: stylistInfo.active_schedule_type });
         if (scheduleInfo && scheduleInfo.scheduled_days.length > 0) {
-          const currentDate = moment(parseInt(req.body.date));
+          const currentDate = moment(parseInt(date));
           let currentDay = currentDate.format('dddd');
           currentDay = WEEKDAY_LIST[currentDay];
           let nthOfMoth = Math.ceil(currentDate.date() / 7);
@@ -111,7 +114,7 @@ export class BookingOrderService {
               const scheduleDay = scheduleInfo.scheduled_days[i];
               for (let j = 0; j < scheduleDay.scheduled_times.length; j++) {
                 const scheduleTime = scheduleDay.scheduled_times[j];
-                if (scheduleDay.day == parseInt(currentDay) && scheduleDay.active == true && scheduleTime.active == true && scheduleTime.start_time == req.body.start_time && scheduleTime.end_time == req.body.end_time && !bookingInfo.length) {
+                if (scheduleDay.day == parseInt(currentDay) && scheduleDay.active == true && scheduleTime.active == true && scheduleTime.start_time == start_time && scheduleTime.end_time == end_time && !bookingInfo.length) {
                   isScheduleExist = true;
                 } else {
                   isScheduleExist = false;
@@ -131,21 +134,24 @@ export class BookingOrderService {
     }
   }
 
-  async createOrder(req: Request, userAuth, res: Response) {
+  async createOrder(orderBody: CreateOrderDto, userAuth: CurrentUserDto, res: Response) {
     try {
+      const { convenience_fee, service_charges, tax, discount, voucher, total_bills, voucher_amount, wallet_amount_used,
+        card_amount_used, cart_id, from_time, to_time, stylist_id, booking_type, date, wallet_used, stripe_customer_id, } = orderBody
+
       let user = await this.userModel.findOne({ _id: userAuth._id });
       if (!user) {
         return this.apiResponse.ErrorResponseWithoutData(res, 'User not found');
       }
-      const convenienceFee = req.body.convenience_fee ? req.body.convenience_fee : '';
-      const serviceCharges = req.body.service_charges ? req.body.service_charges : '';
-      const discount = req.body.discount ? req.body.discount : '';
-      const tax = req.body.tax ? req.body.tax : '';
-      const totalBills = req.body.total_bills ? req.body.total_bills : '';
-      const voucher = req.body.voucher ? req.body.voucher : '';
-      const voucherAmount = req.body.voucher_amount ? req.body.voucher_amount : '';
-      const walletAmountUsed = req.body.wallet_amount_used ? req.body.wallet_amount_used : '';
-      const cardAmountUsed = req.body.card_amount_used ? req.body.card_amount_used : '';
+      const convenienceFee = convenience_fee ? convenience_fee : '';
+      const serviceCharges = service_charges ? service_charges : '';
+      const discountAmount = discount ? discount : '';
+      const taxAmount = tax ? tax : '';
+      const totalBills = total_bills ? total_bills : '';
+      const voucherNumber = voucher ? voucher : '';
+      const voucherAmount = voucher_amount ? voucher_amount : '';
+      const walletAmountUsed = wallet_amount_used ? wallet_amount_used : '';
+      const cardAmountUsed = card_amount_used ? card_amount_used : '';
 
       let activeAdress = user.addresses.find((elem) => elem.active);
 
@@ -157,22 +163,22 @@ export class BookingOrderService {
         lng: activeAdress.lng ? activeAdress.lng : '',
         location: activeAdress.live_location ? activeAdress.live_location : '',
       };
-      let cart = await this.customerCarts.findOne({ _id: req.body.cart_id, user_id: userAuth._id });
+      let cart = await this.customerCarts.findOne({ _id: cart_id, user_id: userAuth._id });
       if (!cart) {
         return this.apiResponse.ErrorResponseWithoutData(res, 'Record not found');
       }
 
       let selectedSlot = {
-        from_time: req.body.from_time,
-        to_time: req.body.to_time,
+        from_time: from_time,
+        to_time: to_time,
       };
 
-      if (req.body.stylist_id != '' && req.body.booking_type == '1') {
+      if (stylist_id != '' && booking_type == '1') {
         let booking = await this.orderModel.findOne({
-          stylist_id: req.body.stylist_id,
+          stylist_id: stylist_id,
           booking_type: 1,
           booking_status: 1,
-          date: { $lte: req.body.date },
+          date: { $lte: date },
           selected_slot: selectedSlot,
         }, { _id: 1 });
         if (booking) {
@@ -187,10 +193,10 @@ export class BookingOrderService {
         total_service: cart.bill_details.total_service,
         service_charges: serviceCharges,
         convenience_fee: convenienceFee,
-        discount: discount,
-        voucher: voucher,
+        discount: discountAmount,
+        voucher: voucherNumber,
         voucher_amount: voucherAmount,
-        tax: tax,
+        tax: taxAmount,
         total_bill: totalBills,
         wallet_amount_used: walletAmountUsed,
         card_amount_used: cardAmountUsed,
@@ -204,9 +210,9 @@ export class BookingOrderService {
       }
 
       let bookingType = '';
-      if (req.body.booking_type == '0') {
+      if (booking_type == '0') {
         bookingType = '-O';
-      } else if (req.body.booking_type == '1') {
+      } else if (booking_type == '1') {
         bookingType = '-S';
       } else {
         bookingType = '-D';
@@ -221,7 +227,7 @@ export class BookingOrderService {
 
       const orderNumber = `HS${stylistType}${bookingType}${cityName}-${Date.now().toString().substring(0, 10)}`;
 
-      if (parseInt(req.body.wallet_used) === 1) {
+      if (wallet_used) {
         if (walletBalance >= totalBill) {
           let updated_wallet_balance = walletBalance - totalBill;
           let amount_deducted = walletBalance - updated_wallet_balance;
@@ -229,14 +235,14 @@ export class BookingOrderService {
             order_number: orderNumber,
             user_id: userAuth._id,
             cart: cart.cart_profiles,
-            booking_type: req.body.booking_type,
+            booking_type: booking_type,
             bill_details: totalBillDetail,
-            date: req.body.date,
-            wallet_used: req.body.wallet_used,
+            date: date,
+            wallet_used: wallet_used,
             selected_slot: selectedSlot,
-            stylist_id: req.body.stylist_id,
+            stylist_id: stylist_id,
             active_location: active_location,
-            stripe_customer_id: req.body.stripe_customer_id,
+            stripe_customer_id: stripe_customer_id,
             wallet_amount_used: updated_wallet_balance ? updated_wallet_balance : 0,
             charge_id: '',
             created_at: Date.now(),
@@ -252,15 +258,15 @@ export class BookingOrderService {
             city: active_adress.city,
             full_name: user.firstname || user.lastname ? user.firstname + ' ' + user.lastname : '',
             profile: user.profile ? CUSTOMER_PROFILE + user.profile : null,
-            booking_type: parseInt(req.body.booking_type) === 0 ? 'On-Demand Order' : 'Scheduled Order',
+            booking_type: parseInt(booking_type) === 0 ? 'On-Demand Order' : 'Scheduled Order',
             stylist_level: cart.stylist_type,
             created_at: `${booking.created_at}`,
             cart_profile: cart.cart_profiles,
             token: user.devices[0] ? user.devices[0].token : '',
             type: user.devices[0] ? user.devices[0].type : '',
             user_id: userAuth._id,
-            stylist_id: req.body.stylist_id ? req.body.stylist_id : '',
-            notification_type: parseInt(req.body.booking_type) === 0 ? 'on_demand_booking' : 'on_scheduled_booking',
+            stylist_id: stylist_id ? stylist_id : '',
+            notification_type: parseInt(booking_type) === 0 ? 'on_demand_booking' : 'on_scheduled_booking',
             total_price: `${totalBill}`,
             order_id: booking._id ? booking._id : null,
             is_custom: false,
@@ -272,19 +278,19 @@ export class BookingOrderService {
           return this.apiResponse.successResponseWithData(res, 'Booking created!', result);
         } else {
           let billToDeductFromCard = cart.bill_details.total_bill - walletBalance;
-          let chrg = await this.createCharge(billToDeductFromCard, req.body.stripe_customer_id);
+          let chrg = await this.createCharge(billToDeductFromCard, stripe_customer_id);
           let createdObj = {
             order_number: orderNumber,
             user_id: userAuth._id,
             cart: cart.cart_profiles,
-            booking_type: req.body.booking_type,
+            booking_type: booking_type,
             bill_details: totalBillDetail,
-            date: req.body.date,
-            wallet_used: req.body.wallet_used,
+            date: date,
+            wallet_used: wallet_used,
             selected_slot: selectedSlot,
-            stylist_id: req.body.stylist_id,
+            stylist_id: stylist_id,
             active_location: active_location,
-            stripe_customer_id: req.body.stripe_customer_id,
+            stripe_customer_id: stripe_customer_id,
             wallet_amount_used: walletBalance ? walletBalance : 0,
             charge_id: chrg.id ? chrg.id : '',
             created_at: Date.now(),
@@ -301,7 +307,7 @@ export class BookingOrderService {
           let transactionType = 'deduction';
           await this.createPaymentTransaction(message, billToDeductFromCard, userAuth._id, transactionType);
           let notify = {};
-          if (parseInt(req.body.booking_type) === 0) {
+          if (parseInt(booking_type) === 0) {
             notify = await this.deviceNotification.findOne({ type: 'on_demand_booking' });
           } else {
             notify = await this.deviceNotification.findOne({ type: 'on_scheduled_booking' });
@@ -312,15 +318,15 @@ export class BookingOrderService {
             city: activeAdress.city,
             full_name: user.firstname || user.lastname ? user.firstname + ' ' + user.lastname : '',
             profile: user.profile ? CUSTOMER_PROFILE + user.profile : null,
-            booking_type: parseInt(req.body.booking_type) === 0 ? 'On-Demand Order' : 'Scheduled Order',
+            booking_type: parseInt(booking_type) === 0 ? 'On-Demand Order' : 'Scheduled Order',
             stylist_level: cart.stylist_type,
             created_at: `${booking.created_at}`,
             token: user.devices[0] ? user.devices[0].token : '',
             type: user.devices[0] ? user.devices[0].type : '',
             cart_profile: cart.cart_profiles,
             user_id: userAuth._id,
-            stylist_id: req.body.stylist_id ? req.body.stylist_id : '',
-            notification_type: parseInt(req.body.booking_type) === 0 ? 'on_demand_booking' : 'on_sheduled_booking',
+            stylist_id: stylist_id ? stylist_id : '',
+            notification_type: parseInt(booking_type) === 0 ? 'on_demand_booking' : 'on_sheduled_booking',
             total_price: `${totalBill}`,
             order_id: booking._id ? booking._id : null,
             is_custom: false,
@@ -331,19 +337,19 @@ export class BookingOrderService {
           return this.apiResponse.successResponseWithData(res, 'Booking created!', result);
         }
       } else {
-        let chrg = await this.createCharge(cart.bill_details.total_bill, req.body.stripe_customer_id);
+        let chrg = await this.createCharge(cart.bill_details.total_bill, stripe_customer_id);
         let createdObj = {
           order_number: orderNumber,
           user_id: userAuth._id,
           cart: cart.cart_profiles,
-          booking_type: req.body.booking_type,
+          booking_type: booking_type,
           bill_details: totalBillDetail,
-          date: req.body.date,
-          wallet_used: req.body.wallet_used,
+          date: date,
+          wallet_used: wallet_used,
           selected_slot: selectedSlot,
-          stylist_id: req.body.stylist_id,
+          stylist_id: stylist_id,
           active_location: active_location,
-          stripe_customer_id: req.body.stripe_customer_id,
+          stripe_customer_id: stripe_customer_id,
           wallet_amount_used: 0,
           charge_id: chrg.id ? chrg.id : '',
           created_at: Date.now(),
@@ -361,13 +367,13 @@ export class BookingOrderService {
           city: activeAdress.city,
           full_name: user.firstname || user.lastname ? user.firstname + ' ' + user.lastname : '',
           profile: user.profile ? CUSTOMER_PROFILE + user.profile : null,
-          booking_type: parseInt(req.body.booking_type) === 0 ? 'On-Demand Order' : 'Scheduled Order',
+          booking_type: parseInt(booking_type) === 0 ? 'On-Demand Order' : 'Scheduled Order',
           stylist_level: cart.stylist_type,
           created_at: `${booking.created_at}`,
           cart_profile: cart.cart_profiles,
           user_id: userAuth._id,
-          stylist_id: req.body.stylist_id ? req.body.stylist_id : '',
-          notification_type: parseInt(req.body.booking_type) === 0 ? 'on_demand_booking' : 'on_sheduled_booking',
+          stylist_id: stylist_id ? stylist_id : '',
+          notification_type: parseInt(booking_type) === 0 ? 'on_demand_booking' : 'on_sheduled_booking',
           total_price: `${totalBill}`,
           order_id: booking._id ? booking._id : null,
           is_custom: false,
@@ -375,7 +381,7 @@ export class BookingOrderService {
 
         await this.utilityService.sendNotificationToNearbyStylist(data);
         let result = { _id: booking._id };
-        if (Boolean(req.body.wallet_used)) {
+        if (Boolean(wallet_used)) {
           return this.apiResponse.successResponseWithData(res, 'Booking created!', result);
         } else {
           return this.apiResponse.successResponseWithData(res, 'Booking created!', result);
@@ -386,9 +392,10 @@ export class BookingOrderService {
     }
   }
 
-  async changeBookingStatus(req: Request, res: Response) {
+  async changeBookingStatus(chnageStatusBody: ChangeStatusDto, res: Response) {
+    const { order_id, stylist_id, status } = chnageStatusBody;
     try {
-      const user = await this.orderModel.findOne({ _id: req.body.order_id });
+      const user = await this.orderModel.findOne({ _id: order_id });
       if (user.booking_type === 1) {
         let initalDate = new Date(user.date);
         let selectedSlot = user.selected_slot;
@@ -401,34 +408,34 @@ export class BookingOrderService {
           return;
         }
       }
-      if (user.stylist_id && user.stylist_id != req.body.stylist_id) {
+      if (user.stylist_id && user.stylist_id != stylist_id) {
         return this.apiResponse.ErrorResponseWithoutData(res, 'Order already accepted by someone else!');
       }
-      if (user.order_rejected_by.indexOf(req.body.stylist_id) > -1) {
+      if (user.order_rejected_by.indexOf(stylist_id) > -1) {
         return this.apiResponse.ErrorResponseWithoutData(res, 'Order already rejected by you!');
       }
       let query = {};
       let notificationType = '';
-      let stylistInfo = await this.serviceProvider.findOne({ _id: req.body.stylist_id }, { firstname: 1 });
+      let stylistInfo = await this.serviceProvider.findOne({ _id: stylist_id }, { firstname: 1 });
       let date = new Date();
-      if (parseInt(req.body.status) === 1) {
+      if (parseInt(status) === 1) {
         query = {
-          booking_status: req.body.status,
-          stylist_id: req.body.stylist_id,
+          booking_status: status,
+          stylist_id: stylist_id,
           order_accepted_at: Math.floor(Date.now()),
         };
         notificationType = 'on_demand_request_accepted';
         if (user.charge_id) await this.capturePayment(user.charge_id);
-      } else if (parseInt(req.body.status) === 2) {
+      } else if (parseInt(status) === 2) {
         query = {
           $set: {
-            booking_status: req.body.status,
-            stylist_id: req.body.stylist_id,
+            booking_status: status,
+            stylist_id: stylist_id,
             reached_location_at: Math.floor(Date.now()),
           },
         };
         notificationType = 'stylist_reached_location';
-      } else if (parseInt(req.body.status) === 3) {
+      } else if (parseInt(status) === 3) {
         notificationType = 'stylist_started_service';
         let orderUser = await this.userModel.findOne({ _id: user.user_id }, { phone_number: 1, country_code: 1 });
 
@@ -436,7 +443,7 @@ export class BookingOrderService {
           this.apiResponse.ErrorResponseWithoutData(res, 'This user is not present in our db!');
           return;
         }
-        let activeBooking = await this.orderModel.findOne({ stylist_id: req.body.stylist_id, booking_status: 3 }, { _id: 1 });
+        let activeBooking = await this.orderModel.findOne({ stylist_id: stylist_id, booking_status: 3 }, { _id: 1 });
         if (activeBooking) {
           this.apiResponse.ErrorResponseWithoutData(res, 'Oops seems like you already have active booking!');
           return;
@@ -449,28 +456,28 @@ export class BookingOrderService {
           phone_number: orderUser.phone_number,
         };
 
-        let updated = await this.orderModel.updateOne({ _id: req.body.order_id }, { $set: { start_service_otp: otp } });
+        let updated = await this.orderModel.updateOne({ _id: order_id }, { $set: { start_service_otp: otp } });
 
         this.apiResponse.successResponseWithNoData(res, 'Otp sent!');
         if (user.charge_id) {
           await this.capturePayment(user.charge_id);
         }
         return;
-      } else if (parseInt(req.body.status) === 4) {
+      } else if (parseInt(status) === 4) {
         query = {
-          $set: { booking_status: req.body.status, stylist_id: req.body.stylist_id, completed_at: Math.floor(Date.now()) },
+          $set: { booking_status: status, stylist_id: stylist_id, completed_at: Math.floor(Date.now()) },
         };
         notificationType = 'completed_order';
 
         let total_bill = user.bill_details.total_bill;
-        await this.serviceProvider.updateOne({ _id: req.body.stylist_id }, { $inc: { wallet: total_bill } });
+        await this.serviceProvider.updateOne({ _id: stylist_id }, { $inc: { wallet: total_bill } });
         if (user.addons_charge_id)
           await this.capturePayment(user.addons_charge_id);
-      } else if (parseInt(req.body.status) === 5) {
-        query = { $push: { order_rejected_by: req.body.stylist_id } };
-        await this.notifications.updateOne({ order_id: req.body.order_id, stylist_id: req.body.stylist_id }, { $set: { type: 'rejected' } });
+      } else if (parseInt(status) === 5) {
+        query = { $push: { order_rejected_by: stylist_id } };
+        await this.notifications.updateOne({ order_id: order_id, stylist_id: stylist_id }, { $set: { type: 'rejected' } });
       } else {
-        query = { booking_status: req.body.status };
+        query = { booking_status: status };
       }
 
       axios.post(process.env.NOTIFICATION_URL, {
@@ -482,9 +489,9 @@ export class BookingOrderService {
         },
       });
 
-      const userOrder = await this.orderModel.updateOne({ _id: req.body.order_id }, query);
+      const userOrder = await this.orderModel.updateOne({ _id: order_id }, query);
       let result = {
-        status: parseInt(req.body.status),
+        status: parseInt(status),
       };
       return this.apiResponse.successResponseWithData(res, 'Record updated', result);
     } catch (e) {
@@ -492,22 +499,24 @@ export class BookingOrderService {
     }
   }
 
-  async createDirectOrder(req: Request, userAuth, res: Response) {
+  async createDirectOrder(createDirectOrder: CreateDirectOrderDto, userAuth: CurrentUserDto, res: Response) {
     try {
+      const { convenience_fee, service_charges, discount, tax, total_bills, voucher, voucher_amount, wallet_amount_used, card_amount_used, cart_id, from_time, to_time,
+        stylist_id, stripe_customer_id, date, booking_type } = createDirectOrder;
       let user = await this.userModel.findOne({ _id: userAuth._id });
       if (!user) {
         return this.apiResponse.ErrorResponseWithoutData(res, 'User not found');
       }
 
-      const convenienceFee = req.body.convenience_fee ? req.body.convenience_fee : 0;
-      const serviceCharges = req.body.service_charges ? req.body.service_charges : 0;
-      const discount = req.body.discount ? req.body.discount : 0;
-      const tax = req.body.tax ? req.body.tax : 0;
-      const totalBills = req.body.total_bills ? req.body.total_bills : 0;
-      const voucher = req.body.voucher ? req.body.voucher : '';
-      const voucherAmount = req.body.voucher_amount ? req.body.voucher_amount : 0;
-      const walletAmountUsed = req.body.wallet_amount_used ? req.body.wallet_amount_used : '';
-      const cardAmountUsed = req.body.card_amount_used ? req.body.card_amount_used : '';
+      const convenienceFee = convenience_fee ? convenience_fee : 0;
+      const serviceCharges = service_charges ? service_charges : 0;
+      const discountAmount = discount ? discount : 0;
+      const taxAmount = tax ? tax : 0;
+      const totalBills = total_bills ? total_bills : 0;
+      const voucherNumber = voucher ? voucher : '';
+      const voucherAmount = voucher_amount ? voucher_amount : 0;
+      const walletAmountUsed = wallet_amount_used ? wallet_amount_used : '';
+      const cardAmountUsed = card_amount_used ? card_amount_used : '';
 
       let activeAdress = user.addresses.find((elem) => elem.active)
       let activeLocation = {
@@ -518,30 +527,30 @@ export class BookingOrderService {
         lng: activeAdress.lat ? activeAdress.lat : '',
         location: activeAdress.location ? activeAdress.location : '',
       };
-      let cart = await this.customerCarts.findOne({ _id: req.body.cart_id, user_id: userAuth._id });
+      let cart = await this.customerCarts.findOne({ _id: cart_id, user_id: userAuth._id });
       if (!cart) {
         return this.apiResponse.ErrorResponseWithoutData(res, 'Cart not exists for this user!');
       }
       let query = {};
-      if (req.body.from_time && req.body.to_time) {
+      if (from_time && to_time) {
         query = {
-          stylist_id: req.body.stylist_id,
+          stylist_id: stylist_id,
           booking_type: 1,
           booking_status: 1,
-          date: { $lte: req.body.date },
+          date: { $lte: date },
           direct_order: 1,
-          selected_slot: { from_time: req.body.from_time, to_time: req.body.to_time },
+          selected_slot: { from_time: from_time, to_time: to_time },
           active_location: activeLocation,
-          stripe_customer_id: req.body.stripe_customer_id,
+          stripe_customer_id: stripe_customer_id,
         };
       } else {
         query = {
-          stylist_id: req.body.stylist_id,
+          stylist_id: stylist_id,
           booking_type: 0,
           booking_status: 1,
           direct_order: 1,
           active_location: activeLocation,
-          stripe_customer_id: req.body.stripe_customer_id,
+          stripe_customer_id: stripe_customer_id,
         };
       }
       let booking = await this.orderModel.findOne(query, { _id: 1 });
@@ -553,10 +562,10 @@ export class BookingOrderService {
         total_service: cart.bill_details.total_service,
         service_charges: serviceCharges,
         convenience_fee: convenienceFee,
-        discount: discount,
-        voucher: voucher,
+        discount: discountAmount,
+        voucher: voucherNumber,
         voucher_amount: voucherAmount,
-        tax: tax,
+        tax: taxAmount,
         total_bill: totalBills,
         wallet_amount_used: walletAmountUsed,
         card_amount_used: cardAmountUsed,
@@ -568,19 +577,19 @@ export class BookingOrderService {
             return this.apiResponse.ErrorResponseWithoutData(res, err.message);
           }
           let createdObj = {};
-          if (req.body.from_time && req.body.to_time) {
+          if (from_time && to_time) {
             createdObj = {
               order_number: 'HST-' + Date.now(),
               user_id: userAuth._id,
               cart: cart.cart_profiles,
-              booking_type: req.body.booking_type,
+              booking_type: booking_type,
               bill_details: totalBillDetail,
-              date: req.body.date,
-              selected_slot: { from_time: req.body.from_time, to_time: req.body.to_time },
-              stylist_id: req.body.stylist_id,
+              date: date,
+              selected_slot: { from_time: from_time, to_time: to_time },
+              stylist_id: stylist_id,
               direct_order: 1,
               active_location: activeLocation,
-              stripe_customer_id: req.body.stripe_customer_id ? req.body.stripe_customer_id : '',
+              stripe_customer_id: stripe_customer_id ? stripe_customer_id : '',
               charge_id: result.id ? result.id : '',
               created_at: Date.now(),
             };
@@ -589,12 +598,12 @@ export class BookingOrderService {
               order_number: 'HST-' + Date.now(),
               user_id: userAuth._id,
               cart: cart.cart_profiles,
-              booking_type: req.body.booking_type,
+              booking_type: booking_type,
               bill_details: totalBillDetail,
-              stylist_id: req.body.stylist_id,
+              stylist_id: stylist_id,
               direct_order: 1,
               active_location: activeLocation,
-              stripe_customer_id: req.body.stripe_customer_id ? req.body.stripe_customer_id : '',
+              stripe_customer_id: stripe_customer_id ? stripe_customer_id : '',
               charge_id: result.id ? result.id : '',
               created_at: Date.now(),
             };
@@ -617,7 +626,7 @@ export class BookingOrderService {
             type: user.devices[0] ? user.devices[0].type : '',
             user_id: userAuth._id,
             is_custom: true,
-            stylist_id: req.body.stylist_id,
+            stylist_id: stylist_id,
             notification_type: 'on_custom_booking',
             total_price: `${cart.bill_details.total_bill}`,
             order_id: booking._id ? booking._id : null,
@@ -633,36 +642,37 @@ export class BookingOrderService {
     }
   }
 
-  async cancleOrder(req: Request, res: Response) {
+  async cancleOrder(cancleOrder: CancleOrderDto, res: Response) {
     try {
-      const data = await this.orderModel.findOne({ _id: req.body.order_id, booking_status: { $nin: [4, 6] } });
+      const { order_id, service_type, user_type, reason } = cancleOrder;
+      const data = await this.orderModel.findOne({ _id: order_id, booking_status: { $nin: [4, 6] } });
       if (!data) {
         this.apiResponse.ErrorResponseWithoutData(res, 'Order not found!');
         return;
       }
       let query;
-      let service = req.body.service_type == 1 ? 'scheduled_service' : 'on_demand_service';
+      let service = service_type == 1 ? 'scheduled_service' : 'on_demand_service';
       if (data.booking_status === 0) {
         query = {
-          types: req.body.user_type,
+          types: user_type,
           service_type: service,
           order_status: 'not_assigned',
         };
       } else if (data.booking_status === 1) {
         query = {
-          types: req.body.user_type,
+          types: user_type,
           service_type: service,
           order_status: 'stylist_assigned',
         };
       } else if (data.booking_status === 2) {
         query = {
-          types: req.body.user_type,
+          types: user_type,
           service_type: service,
           order_status: 'reached_location',
         };
       } else if (data.booking_status === 3) {
         query = {
-          types: req.body.user_type,
+          types: user_type,
           service_type: service,
           order_status: 'start_service',
         };
@@ -679,14 +689,14 @@ export class BookingOrderService {
       data.bill_details.cancellation_fee = cancellationPercentage;
 
       axios.post(process.env.NOTIFICATION_URL, {
-        receiverId: req.body.user_type == 'customer' ? data.stylist_id : data.user_id,
-        notification_type: req.body.user_type == 'customer' ? 'customer_cancel_order' : 'stylist_cancel_order',
+        receiverId: user_type == 'customer' ? data.stylist_id : data.user_id,
+        notification_type: user_type == 'customer' ? 'customer_cancel_order' : 'stylist_cancel_order',
         extraData: { booking_id: data.order_number },
       });
-      const update = await this.orderModel.updateOne({ _id: req.body.order_id },
+      const update = await this.orderModel.updateOne({ _id: order_id },
         {
           $set: {
-            cancel_reason: req.body.reason,
+            cancel_reason: reason,
             bill_details: data.bill_details,
             booking_status: 6,
           },
@@ -700,24 +710,25 @@ export class BookingOrderService {
     }
   }
 
-  async confirmOtpToStartService(req: Request, res: Response) {
+  async confirmOtpToStartService(startService: ConfirmOtpServiceDto, res: Response) {
     try {
-      const booking = await this.orderModel.findOne({ _id: req.body.booking_id });
+      const { booking_id, stylist_id, otp } = startService;
+      const booking = await this.orderModel.findOne({ _id: booking_id });
       if (!booking) {
         this.apiResponse.ErrorResponseWithoutData(res, 'Booking not found!');
         return;
       }
-      if (parseInt(booking.start_service_otp) !== parseInt(req.body.otp)) {
+      if (parseInt(booking.start_service_otp) !== parseInt(otp)) {
         this.apiResponse.ErrorResponseWithoutData(res, 'Entered otp is wrong!');
         return;
       }
       let dataToUpdate = {
         start_service_otp: null,
         booking_status: 3,
-        stylist_id: req.body.stylist_id,
+        stylist_id: stylist_id,
         started_service_at: Math.floor(Date.now()),
       };
-      const bookingUpdate = await this.orderModel.updateOne({ _id: req.body.booking_id }, { $set: dataToUpdate });
+      const bookingUpdate = await this.orderModel.updateOne({ _id: booking_id }, { $set: dataToUpdate });
       if (bookingUpdate) {
         this.apiResponse.successResponseWithData(res, 'Service started!', dataToUpdate);
         return;
@@ -727,9 +738,10 @@ export class BookingOrderService {
     }
   }
 
-  async reBookingOrder(req: Request, userAuth, res: Response) {
+  async reBookingOrder(rebookingOrder: RebookingOrderDto, userAuth:CurrentUserDto, res: Response) {
     try {
-      const user = await this.orderModel.findOne({ _id: req.body.order_id },
+      const { order_id, stripe_customer_id, date, from_time, to_time } = rebookingOrder;
+      const user = await this.orderModel.findOne({ _id: order_id },
         {
           bill_details: 1,
           reschedule_count: 1,
@@ -742,13 +754,13 @@ export class BookingOrderService {
           date: 1,
         },
       );
-      const chrg = await this.createCharge(user.bill_details.total_bill, req.body.stripe_customer_id);
+      const chrg = await this.createCharge(user.bill_details.total_bill, stripe_customer_id);
       if (!user) {
         this.apiResponse.ErrorResponseWithoutData(res, 'Order not found!');
         return;
       }
       if (user.reschedule_count >= ORDER_RESCHEDULE_COUNT) {
-        await this.orderModel.updateOne({ _id: req.body.order_id },
+        await this.orderModel.updateOne({ _id: order_id },
           {
             $set: {
               cancelled_reason: 'reached maximum reschedule count',
@@ -768,19 +780,19 @@ export class BookingOrderService {
         booking_type: user.booking_type,
         direct_order: user.direct_order,
         date: user.date,
-        stripe_customer_id: req.body.stripe_customer_id,
+        stripe_customer_id: stripe_customer_id,
         charge_id: chrg.id ? chrg.id : '',
         selected_slot: null,
       };
-      if (req.body.date && req.body.from_time && req.body.to_time) {
+      if (date && from_time && to_time) {
         if (user.booking_type === 1) {
         } else {
           throw new Error('Not a scheduled order');
         }
-        details.date = req.body.date;
+        details.date = date;
         let slot = {
-          from_time: req.body.from_time,
-          to_time: req.body.to_time,
+          from_time: from_time,
+          to_time: to_time,
         };
         details.selected_slot = slot;
       }
@@ -812,9 +824,10 @@ export class BookingOrderService {
         is_custom: true,
       };
       await this.utilityService.sendNotificationToNearbyStylist(data);
-      await this.orderModel.updateOne({ _id: req.body.order_id }, { $inc: { reschedule_count: 1 } });
+      await this.orderModel.updateOne({ _id: order_id }, { $inc: { reschedule_count: 1 } });
       return this.apiResponse.successResponseWithData(res, 'Order created!', result);
     } catch (e) {
+      console.log('e :>> ', e);
       return this.apiResponse.ErrorResponseWithoutData(res, e.message);
     }
   }

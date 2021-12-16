@@ -3,7 +3,7 @@ import { Schema as MongooseSchema } from 'mongoose';
 
 @Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }, collection: 'notifications' })
 export class Notifications {
-  @Prop()
+  @Prop({ type: Object, required: true})
   user: {
     user_id: { type: MongooseSchema.Types.ObjectId };
     full_name: { type: String };
@@ -11,7 +11,7 @@ export class Notifications {
   };
 
   @Prop({ type: MongooseSchema.Types.ObjectId, required: true })
-  stylist_id: MongooseSchema.Types.ObjectId;
+  stylist_id: string;
 
   @Prop({ type: String, default: '' })
   message: string;
@@ -20,7 +20,7 @@ export class Notifications {
   is_service_request: boolean;
 
   @Prop({ type: MongooseSchema.Types.ObjectId })
-  order_id: MongooseSchema.Types.ObjectId;
+  order_id: string;
 
   @Prop({ type: Boolean, default: false })
   seen: boolean;

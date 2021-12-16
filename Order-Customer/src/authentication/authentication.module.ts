@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
+
 import { JwtStrategy } from './strategy/local.strategy';
 import { UserSchema } from 'src/Schema/user.schema';
 

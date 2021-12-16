@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+
 import { CancellationRuleSchema } from 'src/Schema/cancellationRule.schema';
 import { ConfigSchema } from 'src/Schema/config.schema';
 import { CustomerCartSchema } from 'src/Schema/customerCart.schema';
@@ -25,7 +26,7 @@ import { BookingOrderService } from './bookingOrder.service';
       { name: 'customerCarts', schema: CustomerCartSchema },
       { name: 'deviceNotification', schema: DeviceNotificationSchema },
       { name: 'customerTransaction', schema: CustomerTransactionSchema },
-      { name: 'Config', schema: ConfigSchema },
+      { name: 'config', schema: ConfigSchema },
       { name: 'notifications', schema: NotificationSchema },
       { name: 'cancellationRule', schema: CancellationRuleSchema },
     ]),

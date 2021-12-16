@@ -1,29 +1,32 @@
-import { Controller, Get, Post, Req, Res } from '@nestjs/common';
-import { Request, Response } from 'express';
+import { Body, Controller, Get, Post, Res } from '@nestjs/common';
+import { Response } from 'express';
+
 import { CurrentUser } from 'src/authentication/gaurd/user.decorator';
 import { CartOrderService } from './cartOrder.service';
+import { AddServiceToCartDto, UpdateCartItemDto } from './cartOrder.dto';
+import { CurrentUserDto } from 'src/authentication/authentication.dto';
 
-@Controller()
+@Controller('api')
 export class CartOrderController {
   constructor(private readonly cartOrderService: CartOrderService) { }
 
   @Post('add-service-to-cart')
-  async addServiceToCart(@CurrentUser() user: Object, @Req() req: Request, @Res() res: Response) {
-    return await this.cartOrderService.addServiceToCart(req, user, res);
+  async addServiceToCart(@CurrentUser() user: CurrentUserDto, @Body() addCartBody: AddServiceToCartDto, @Res() res: Response) {
+    return await this.cartOrderService.addServiceToCart(addCartBody, user, res);
   }
 
   @Get('get-cart')
-  async getCart(@CurrentUser() user: Object, @Req() req: Request, @Res() res: Response) {
-    return await this.cartOrderService.getCart(req, user, res);
+  async getCart(@CurrentUser() user: CurrentUserDto, @Res() res: Response) {
+    return await this.cartOrderService.getCart(user, res);
   }
 
   @Get('clear-cart')
-  async clearCart(@CurrentUser() user: Object, @Req() req: Request, @Res() res: Response) {
-    return await this.cartOrderService.clearCart(req, user, res);
+  async clearCart(@CurrentUser() user: CurrentUserDto, @Res() res: Response) {
+    return await this.cartOrderService.clearCart(user, res);
   }
 
   @Post('update-cart-item')
-  async updateCartItem(@CurrentUser() user: Object, @Req() req: Request, @Res() res: Response) {
-    return await this.cartOrderService.updateCartItem(req, user, res);
+  async updateCartItem(@CurrentUser() user: CurrentUserDto, @Body() updateCartBody: UpdateCartItemDto, @Res() res: Response) {
+    return await this.cartOrderService.updateCartItem(updateCartBody, user, res);
   }
 }

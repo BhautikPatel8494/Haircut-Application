@@ -1,44 +1,48 @@
-import { Controller, Post, Req, Res } from '@nestjs/common';
-import { Request, Response } from 'express';
+import { Body, Controller, Post, Res } from '@nestjs/common';
+import { Response } from 'express';
+
 import { CurrentUser } from 'src/authentication/gaurd/user.decorator';
 import { BookingOrderService } from './bookingOrder.service';
+import { CancleOrderDto, ChangeStatusDto, ConfirmOtpServiceDto, CreateDirectOrderDto, CreateOrderDto, FilterDto, RebookingOrderDto } from './bookingOrder.dto';
+import { CurrentUserDto } from 'src/authentication/authentication.dto';
 
-@Controller()
+
+@Controller('api')
 export class BookingOrderController {
   constructor(private readonly bookingOrderService: BookingOrderService) { }
 
   @Post('check-stylist-availability')
-  async checkStylistAvailabel(@Req() req: Request, @Res() res: Response) {
-    return await this.bookingOrderService.checkStylistAvailabel(req, res);
+  async checkStylistAvailabel(@Body() filterBody: FilterDto, @Res() res: Response) {
+    return await this.bookingOrderService.checkStylistAvailabel(filterBody, res);
   }
 
   @Post('create-order')
-  async createOrder(@CurrentUser() user: Object, @Req() req: Request, @Res() res: Response) {
-    return await this.bookingOrderService.createOrder(req, user, res);
+  async createOrder(@CurrentUser() user: CurrentUserDto, @Body() orderBody: CreateOrderDto, @Res() res: Response) {
+    return await this.bookingOrderService.createOrder(orderBody, user, res);
   }
 
   @Post('change-order-status')
-  async changeOrderStatus(@Req() req: Request, @Res() res: Response) {
-    return await this.bookingOrderService.changeBookingStatus(req, res);
+  async changeOrderStatus(@Body() chnageStatusBody: ChangeStatusDto, @Res() res: Response) {
+    return await this.bookingOrderService.changeBookingStatus(chnageStatusBody, res);
   }
 
   @Post('create-direct-order')
-  async createDirectOrder(@CurrentUser() user: Object, @Req() req: Request, @Res() res: Response) {
-    return await this.bookingOrderService.createDirectOrder(req, user, res);
+  async createDirectOrder(@CurrentUser() user: CurrentUserDto, @Body() createDirectOrder: CreateDirectOrderDto, @Res() res: Response) {
+    return await this.bookingOrderService.createDirectOrder(createDirectOrder, user, res);
   }
 
   @Post('cancel-order')
-  async cancleOrder(@Req() req: Request, @Res() res: Response) {
-    return await this.bookingOrderService.cancleOrder(req, res);
+  async cancleOrder(@Body() cancleOrder: CancleOrderDto, @Res() res: Response) {
+    return await this.bookingOrderService.cancleOrder(cancleOrder, res);
   }
 
   @Post('confirm-otp-start-service')
-  async confirmOtpToStartService(@Req() req: Request, @Res() res: Response) {
-    return await this.bookingOrderService.confirmOtpToStartService(req, res);
+  async confirmOtpToStartService(@Body() startService: ConfirmOtpServiceDto, @Res() res: Response) {
+    return await this.bookingOrderService.confirmOtpToStartService(startService, res);
   }
 
   @Post("rebook-order")
-  async reBookingOrder(@CurrentUser() user: Object, @Req() req: Request, @Res() res: Response) {
-    return await this.bookingOrderService.reBookingOrder(req, user, res)
+  async reBookingOrder(@CurrentUser() user: CurrentUserDto, @Body() rebookingOrder: RebookingOrderDto, @Res() res: Response) {
+    return await this.bookingOrderService.reBookingOrder(rebookingOrder, user, res)
   }
 }

@@ -1,24 +1,25 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { Config } from 'src/Schema/globalSettings.schema';
-import { Order } from 'src/Schema/orderModel.schema';
-import { Service_Provider } from 'src/Schema/serviceProvider.schema';
-import { User } from 'src/Schema/userModel.schema';
-import { CUSTOMER_PROFILE } from './constant';
 import axios from 'axios';
 import * as moment from 'moment';
 import * as schedule from "node-schedule"
-import { Notifications } from 'src/Schema/notificationModel.schema';
+
+import { CUSTOMER_PROFILE } from './constant';
+import { Notifications } from 'src/Schema/notification.schema';
+import { Orders } from 'src/Schema/order.schema';
+import { Users } from 'src/Schema/user.schema';
+import { Configs } from 'src/Schema/config.schema';
+import { ServiceProviders } from 'src/Schema/serviceProvider.schema';
 
 @Injectable()
 export class UtilityService {
   constructor(
-    @InjectModel('Service_Provider') private readonly service_ProviderModel: Model<Service_Provider>,
-    @InjectModel('Order') private readonly orderModel: Model<Order>,
-    @InjectModel('User') private readonly userModel: Model<User>,
-    @InjectModel('Config') private readonly configModel: Model<Config>,
-    @InjectModel('Notifications') private readonly notificationModel: Model<Notifications>,
+    @InjectModel('serviceProvider') private readonly serviceProvider: Model<ServiceProviders>,
+    @InjectModel('order') private readonly orderModel: Model<Orders>,
+    @InjectModel('user') private readonly userModel: Model<Users>,
+    @InjectModel('config') private readonly configModel: Model<Configs>,
+    @InjectModel('notifications') private readonly notificationModel: Model<Notifications>,
   ) { }
 
   async sendNotificationToNearbyStylist(data) {
@@ -46,7 +47,7 @@ export class UtilityService {
         },
       };
     }
-    const user = await this.service_ProviderModel.aggregate([query,
+    const user = await this.serviceProvider.aggregate([query,
       {
         $lookup: {
           from: 'orders',

@@ -78,6 +78,9 @@ export class Addresses {
 
   @Prop({ type: Boolean, default: false })
   active: boolean;
+
+  @Prop({ type: String })
+  location: string;
 }
 
 const AddressSchema = SchemaFactory.createForClass(Addresses);
@@ -214,7 +217,7 @@ export class Users {
 
   @Prop({ type: Array, default: [] })
   devices: [{
-    device: string;
+    type: string;
     token: string;
   }];
 

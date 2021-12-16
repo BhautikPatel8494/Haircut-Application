@@ -39,7 +39,7 @@ export class Schedules {
     ref: 'service_providers',
     required: true,
   })
-  stylist_id: MongooseSchema.Types.ObjectId;
+  stylist_id: string;
 
   @Prop({ type: Boolean, default: true })
   active: boolean;

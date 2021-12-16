@@ -3,8 +3,10 @@ import { Schema as MongooseSchema } from 'mongoose';
 
 @Schema()
 export class CartItems {
+  _id: any;
+
   @Prop({ type: MongooseSchema.Types.ObjectId, required: true })
-  service_id: MongooseSchema.Types.ObjectId;
+  service_id: string;
 
   @Prop({ type: String, required: true })
   title: string;
@@ -82,13 +84,13 @@ const BillDetailSchema = SchemaFactory.createForClass(BillDetails);
 @Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }, collection: 'customer_carts' })
 export class CustomerCarts {
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'users', required: true })
-  user_id: MongooseSchema.Types.ObjectId;
+  user_id: string;
 
   @Prop({ type: MongooseSchema.Types.ObjectId })
   stylist_id: MongooseSchema.Types.ObjectId;
 
   @Prop({ type: MongooseSchema.Types.ObjectId })
-  location_id: MongooseSchema.Types.ObjectId;
+  location_id: string;
 
   @Prop({ type: MongooseSchema.Types.ObjectId })
   service_category_id: MongooseSchema.Types.ObjectId;

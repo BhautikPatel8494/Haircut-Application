@@ -34,19 +34,19 @@ export class BillDetails {
 
   @Prop({ type: Number, default: 0 })
   convenience_fee: number;
-  
+
   @Prop({ type: Number, default: 0 })
   discount: number;
-  
+
   @Prop({ type: String })
   voucher: string;
-  
+
   @Prop({ type: Number, default: 0 })
   voucher_amount: number;
-  
+
   @Prop({ type: Number, default: 0 })
   tax: number;
-  
+
   @Prop({ type: Number, default: 0 })
   total_bill: number;
 
@@ -55,6 +55,12 @@ export class BillDetails {
 
   @Prop({ type: Number, default: 0 })
   card_amount_used: number;
+
+  @Prop({ type: Number, default: 0 })
+  cancellation_charge: number
+  
+  @Prop({ type: Number, default: 0 })
+  cancellation_fee: number
 }
 
 const BillDetailSchema = SchemaFactory.createForClass(BillDetails);
@@ -96,14 +102,17 @@ export class Orders {
   })
   direct_order: number;
 
-  @Prop({ type: Number, default: new Date().getTime() })
-  date: number;
+  @Prop({ type: String, default: new Date().getTime() })
+  date: string;
 
   @Prop({ type: Object, default: {} })
-  selected_slot: object;
+  selected_slot: {
+    from_time: string,
+    to_time: string
+  };
 
   @Prop({ type: MongooseSchema.Types.ObjectId })
-  stylist_id: MongooseSchema.Types.ObjectId;
+  stylist_id: string;
 
   @Prop({ type: Array, required: true })
   cart: [];
@@ -118,7 +127,7 @@ export class Orders {
   booking_type: number;
 
   @Prop({ type: Array, default: [] })
-  order_rejected_by: [];
+  order_rejected_by: [string];
 
   @Prop({ type: Number, default: 0 })
   reschedule_count: number;

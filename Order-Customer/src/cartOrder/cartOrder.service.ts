@@ -1,25 +1,30 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { Response } from 'express';
 import { Model, Types } from 'mongoose';
-import { Customer_Cart } from 'src/Schema/cartModel.schema';
-import { Custom_service } from 'src/Schema/customService.schema';
-import { Config } from 'src/Schema/globalSettings.schema';
-import { Service } from 'src/Schema/serviceModel.schema';
-import { User } from 'src/Schema/userModel.schema';
+import { CurrentUserDto } from 'src/authentication/authentication.dto';
+
+import { Configs } from 'src/Schema/config.schema';
+import { CustomerCarts } from 'src/Schema/customerCart.schema';
+import { CustomServices } from 'src/Schema/customService.schema';
+import { Services } from 'src/schema/service.schema';
+import { Users } from 'src/Schema/user.schema';
 import { ApiResponse } from 'src/utils/apiResponse.service';
+import { AddServiceToCartDto, UpdateCartItemDto } from './cartOrder.dto';
 
 @Injectable()
 export class CartOrderService {
   constructor(
-    @InjectModel('Customer_Cart') private readonly customer_CartModel: Model<Customer_Cart>,
-    @InjectModel('User') private readonly userModel: Model<User>,
-    @InjectModel('Config') private readonly configModel: Model<Config>,
-    @InjectModel('CustomService') private readonly customService: Model<Custom_service>,
-    @InjectModel('Service') private readonly serviceModel: Model<Service>, private apiResponse: ApiResponse,
+    @InjectModel('customerCart') private readonly customerCartModel: Model<CustomerCarts>,
+    @InjectModel('user') private readonly userModel: Model<Users>,
+    @InjectModel('config') private readonly configModel: Model<Configs>,
+    @InjectModel('customService') private readonly customServiceModel: Model<CustomServices>,
+    @InjectModel('service') private readonly serviceModel: Model<Services>,
+    private apiResponse: ApiResponse,
   ) { }
 
   async getCartLocationStylistAndCat(cart_id) {
-    return this.customer_CartModel.aggregate([{ $match: { _id: cart_id } },
+    return this.customerCartModel.aggregate([{ $match: { _id: cart_id } },
     {
       $lookup: {
         from: 'users',
@@ -73,8 +78,8 @@ export class CartOrderService {
     ]);
   }
 
-  async updateCartTotalDetails(id, userId) {
-    const cart = await this.customer_CartModel.findOne({ user_id: userId });
+  async updateCartTotalDetails(userId) {
+    const cart = await this.customerCartModel.findOne({ user_id: userId });
     if (cart) {
       let totalService = 0;
       let serviceCharges = 0;
@@ -104,33 +109,36 @@ export class CartOrderService {
       cart.bill_details.total_bill = totalBill;
       cart.save();
       if (totalBill == 0 || totalBill === 0) {
-        await this.customer_CartModel.deleteOne({ user_id: userId });
+        await this.customerCartModel.deleteOne({ user_id: userId });
       }
     }
   }
 
-  async addServiceToCart(req, user, res) {
+  async addServiceToCart(addCartBody: AddServiceToCartDto, user: CurrentUserDto, res: Response) {
     try {
-      let isCustom = req.body.type ? true : false;
+      const { type, service_id, quantity, location_id, stylist_type, profile_id, stylist_id, service_category_id,
+        title, sale_price, regular_price, firstname, lastname, user_type, profile } = addCartBody;
+
+      let isCustom = type ? true : false;
       let service;
       if (isCustom) {
-        service = await this.customService.findOne({ _id: req.body.service_id }, { quantity: 1 });
+        service = await this.customServiceModel.findOne({ _id: service_id }, { quantity: 1 });
       } else {
-        service = await this.serviceModel.findOne({ _id: req.body.service_id }, { quantity: 1 });
+        service = await this.serviceModel.findOne({ _id: service_id }, { quantity: 1 });
       }
       if (service && service.quantity > 0) {
-        if (service.quantity >= parseInt(req.body.quantity)) {
+        if (service.quantity >= quantity) {
           console.log('check');
         } else {
           return this.apiResponse.ErrorResponseWithoutData(res, 'This quantity can not be added for this service.');
         }
       }
-      const cart = await this.customer_CartModel.findOne({ user_id: user._id }, { cart_profiles: 1, location_id: 1, stylist_type: 1 });
+      const cart = await this.customerCartModel.findOne({ user_id: user._id }, { cart_profiles: 1, location_id: 1, stylist_type: 1 });
       if (cart != null) {
-        if (cart.location_id != req.body.location_id) {
+        if (cart.location_id != location_id) {
           return this.apiResponse.ErrorResponseWithoutData(res, 'Location should be same!');
         }
-        if (cart.stylist_type != req.body.stylist_type) {
+        if (cart.stylist_type != stylist_type) {
           return this.apiResponse.ErrorResponseWithoutData(res, 'Stylist type should be same!');
         }
 
@@ -138,20 +146,20 @@ export class CartOrderService {
         let addressType = cartInfo[0] && cartInfo[0].items.length > 0 ? cartInfo[0].items[0].address_type : '';
         let stylistName = cartInfo[0] && cartInfo[0].full_name ? cartInfo[0].full_name : '';
         let categoryName = cartInfo[0] && cartInfo[0].category_name ? cartInfo[0].category_name : '';
-        const profileCart = await this.customer_CartModel.findOne({ user_id: user._id, 'cart_profiles.profile_id': new Types.ObjectId(req.body.profile_id) });
-
+        const profileCart = await this.customerCartModel.findOne({ user_id: user._id, 'cart_profiles.profile_id': profile_id });
+        console.log('profileCart :>> ', profileCart);
         if (profileCart != null) {
           if (profileCart.cart_profiles) {
             for (var i = 0; i < profileCart.cart_profiles.length; i++) {
-              if (profileCart.cart_profiles[i].profile_id.toString() == req.body.profile_id) {
+              if (profileCart.cart_profiles[i].profile_id.toString() == profile_id) {
                 let alredayExit: any = profileCart.cart_profiles[i].cart_items.find((elem) => {
-                  if (elem.service_id.toString() === req.body.service_id) {
+                  if (elem.service_id.toString() === service_id) {
                     return elem;
                   }
                 });
                 if (alredayExit) {
-                  if (req.body.quantity == 0) {
-                    const userResponse = await this.customer_CartModel.updateOne({ user_id: user._id, 'cart_profiles.profile_id': new Types.ObjectId(req.body.profile_id), 'cart_profiles.cart_items.service_id': new Types.ObjectId(alredayExit.service_id) },
+                  if (quantity == 0) {
+                    const userResponse = await this.customerCartModel.updateOne({ user_id: user._id, 'cart_profiles.profile_id': new Types.ObjectId(profile_id), 'cart_profiles.cart_items.service_id': new Types.ObjectId(alredayExit.service_id) },
                       {
                         $pull: {
                           'cart_profiles.$.cart_items': {
@@ -161,32 +169,32 @@ export class CartOrderService {
                       },
                     );
                     if (userResponse) {
-                      this.updateCartTotalDetails(req, user._id);
+                      this.updateCartTotalDetails(user._id);
                       return this.apiResponse.successResponseWithNoData(res, 'Service Removed.');
                     }
                   } else {
                     let updatingData = {
-                      service_id: req.body.service_id,
-                      stylist_id: req.body.stylist_id ? req.body.stylist_id : null,
-                      location_id: req.body.location_id ? req.body.location_id : null,
-                      service_category_id: req.body.service_category_id ? req.body.service_category_id : null,
-                      profile_id: req.body.profile_id,
+                      service_id: service_id,
+                      stylist_id: stylist_id ? stylist_id : null,
+                      location_id: location_id ? location_id : null,
+                      service_category_id: service_category_id ? service_category_id : null,
+                      profile_id: profile_id,
                       address_type: addressType,
                       stylist_name: stylistName,
                       category_name: categoryName,
-                      title: req.body.title,
-                      quantity: parseInt(req.body.quantity),
-                      price: parseInt(req.body.sale_price) * parseInt(req.body.quantity),
-                      sale_price: parseInt(req.body.sale_price),
-                      regular_price: parseInt(req.body.regular_price),
-                      service_type: req.body.type ? req.body.type : 'simple-service',
+                      title: title,
+                      quantity: quantity,
+                      price: sale_price * quantity,
+                      sale_price: sale_price,
+                      regular_price: regular_price,
+                      service_type: type ? type : 'simple-service',
                     };
 
-                    const responseUpdate = await this.customer_CartModel.updateOne({
+                    const responseUpdate = await this.customerCartModel.updateOne({
                       user_id: user._id,
                       cart_profiles: {
                         $elemMatch: {
-                          profile_id: req.body.profile_id, 'cart_items._id': alredayExit._id
+                          profile_id: profile_id, 'cart_items._id': alredayExit._id
                         },
                       },
                     },
@@ -194,49 +202,51 @@ export class CartOrderService {
                         // ***********************REMAINING***************
                         $set: {
                           // 'cart_profiles.$[outer].cart_items.$[inner].quantity':
-                          //   parseInt(req.body.quantity),
+                          //   parseInt(quantity),
                           // 'cart_profiles.$[outer].cart_items.$[inner].price':
-                          //   parseInt(req.body.sale_price) *
-                          //   parseInt(req.body.quantity),
+                          //   parseInt(sale_price) *
+                          //   parseInt(quantity),
                         },
                       },
                       {
-                        arrayFilters: [{ 'outer.profile_id': req.body.profile_id }, { 'inner._id': alredayExit._id }],
+                        arrayFilters: [{ 'outer.profile_id': profile_id }, { 'inner._id': alredayExit._id }],
                       },
                     );
                     if (responseUpdate) {
-                      this.updateCartTotalDetails(req, user._id);
+                      this.updateCartTotalDetails(user._id);
                       return this.apiResponse.successResponseWithData(res, 'Service updated.', updatingData);
                     }
                   }
                 } else {
-                  profileCart.cart_profiles[i].cart_items.push({
-                    service_id: req.body.service_id,
-                    title: req.body.title,
+                  const cartPushArray = {
+                    _id: new Types.ObjectId(),
+                    service_id: service_id,
+                    title: title,
                     is_custom: isCustom,
-                    quantity: parseInt(req.body.quantity),
-                    price: parseInt(req.body.sale_price) * parseInt(req.body.quantity),
-                    sale_price: parseInt(req.body.sale_price),
-                    regular_price: parseInt(req.body.regular_price),
-                  });
+                    quantity: quantity,
+                    price: sale_price * quantity,
+                    sale_price: sale_price,
+                    regular_price: regular_price,
+                  }
+                  profileCart.cart_profiles[i].cart_items.push(cartPushArray);
 
                   await profileCart.save();
-                  this.updateCartTotalDetails(req, user._id);
+                  this.updateCartTotalDetails(user._id);
 
                   let updatingData = {
-                    service_id: req.body.service_id,
-                    stylist_id: req.body.stylist_id ? req.body.stylist_id : null,
-                    location_id: req.body.location_id ? req.body.location_id : null,
-                    service_category_id: req.body.service_category_id ? req.body.service_category_id : null,
+                    service_id: service_id,
+                    stylist_id: stylist_id ? stylist_id : null,
+                    location_id: location_id ? location_id : null,
+                    service_category_id: service_category_id ? service_category_id : null,
                     addressType,
                     stylistName,
                     categoryName,
-                    title: req.body.title,
-                    quantity: parseInt(req.body.quantity),
-                    price: parseInt(req.body.sale_price) * parseInt(req.body.quantity),
-                    sale_price: parseInt(req.body.sale_price),
-                    regular_price: parseInt(req.body.regular_price),
-                    profile_id: req.body.profile_id,
+                    title: title,
+                    quantity: quantity,
+                    price: sale_price * quantity,
+                    sale_price: sale_price,
+                    regular_price: regular_price,
+                    profile_id: profile_id,
                   };
                   return this.apiResponse.successResponseWithData(res, 'Service added to cart successfully.', updatingData,
                   );
@@ -245,99 +255,101 @@ export class CartOrderService {
             }
           }
         } else {
-          const cartModelUpdate = await this.customer_CartModel.updateOne({ user_id: user._id },
+          const cartModelUpdate = await this.customerCartModel.updateOne({ user_id: user._id },
             {
               $push: {
                 cart_profiles: {
-                  firstname: req.body.firstname,
-                  lastname: req.body.lastname,
-                  profile_id: req.body.profile_id,
-                  user_type: req.body.user_type ? req.body.user_type : '',
-                  profile: req.body.profile ? req.body.profile : '',
+                  firstname: firstname,
+                  lastname: lastname,
+                  profile_id: profile_id,
+                  user_type: user_type ? user_type : '',
+                  profile: profile ? profile : '',
                   cart_items: [
                     {
-                      service_id: req.body.service_id,
-                      title: req.body.title,
-                      quantity: parseInt(req.body.quantity),
-                      price: parseInt(req.body.sale_price) * parseInt(req.body.quantity),
-                      sale_price: parseInt(req.body.sale_price),
-                      regular_price: parseInt(req.body.regular_price),
-                      is_custom: req.body.type ? true : false,
+                      service_id: service_id,
+                      title: title,
+                      quantity: quantity,
+                      price: sale_price * quantity,
+                      sale_price: sale_price,
+                      regular_price: regular_price,
+                      is_custom: type ? true : false,
                     },
                   ],
                 },
               },
             },
           );
-          this.updateCartTotalDetails(req, user._id);
+          this.updateCartTotalDetails(user._id);
           let updatingData = {
-            service_id: req.body.service_id,
-            stylist_id: req.body.stylist_id ? req.body.stylist_id : null,
-            location_id: req.body.location_id ? req.body.location_id : null,
-            service_category_id: req.body.service_category_id ? req.body.service_category_id : null,
+            service_id: service_id,
+            stylist_id: stylist_id ? stylist_id : null,
+            location_id: location_id ? location_id : null,
+            service_category_id: service_category_id ? service_category_id : null,
             addressType,
             stylistName,
             categoryName,
-            title: req.body.title,
-            quantity: parseInt(req.body.quantity),
-            price: parseInt(req.body.sale_price) * parseInt(req.body.quantity),
-            sale_price: parseInt(req.body.sale_price),
-            regular_price: parseInt(req.body.regular_price),
-            profile_id: req.body.profile_id,
+            title: title,
+            quantity: quantity,
+            price: sale_price * quantity,
+            sale_price: sale_price,
+            regular_price: regular_price,
+            profile_id: profile_id,
           };
           return this.apiResponse.successResponseWithData(res, 'Service added to cart successfully.', updatingData,
           );
         }
       } else {
-        const createdCart = await this.customer_CartModel.create({
+        const createdCart = await this.customerCartModel.create({
           user_id: user._id,
-          stylist_id: req.body.stylist_id ? req.body.stylist_id : null,
-          location_id: req.body.location_id ? req.body.location_id : null,
-          service_category_id: req.body.service_category_id ? req.body.service_category_id : null,
-          stylist_type: req.body.stylist_type ? req.body.stylist_type : null,
-          service_type: req.body.type ? req.body.type : 'simple-service',
+          stylist_id: stylist_id ? stylist_id : null,
+          location_id: location_id ? location_id : null,
+          service_category_id: service_category_id ? service_category_id : null,
+          stylist_type: stylist_type ? stylist_type : null,
+          service_type: type ? type : 'simple-service',
           bill_details: {},
           cart_profiles: [{
-            firstname: req.body.firstname,
-            lastname: req.body.lastname,
-            profile_id: req.body.profile_id,
-            profile: req.body.profile ? req.body.profile : '',
-            user_type: req.body.user_type ? req.body.user_type : '',
+            firstname: firstname,
+            lastname: lastname,
+            profile_id: profile_id,
+            _id: new Types.ObjectId(),
+            profile: profile ? profile : '',
+            user_type: user_type ? user_type : '',
             cart_items: [{
-              service_id: req.body.service_id,
-              title: req.body.title,
-              quantity: parseInt(req.body.quantity),
+              _id: new Types.ObjectId(),
+              service_id: service_id,
+              title: title,
+              quantity: quantity,
               price:
-                parseInt(req.body.sale_price) * parseInt(req.body.quantity),
-              sale_price: parseInt(req.body.sale_price),
-              regular_price: parseInt(req.body.regular_price),
-              is_custom: req.body.type ? true : false,
+                sale_price * quantity,
+              sale_price: sale_price,
+              regular_price: regular_price,
+              is_custom: type ? true : false,
             },
             ],
           },
           ],
         });
-        this.updateCartTotalDetails(req, user._id);
+        this.updateCartTotalDetails(user._id);
         let cart = await this.getCartLocationStylistAndCat(createdCart._id);
         let addressType = cart[0] ? cart[0].items[0]?.address_type : '';
         let stylistName = cart[0] ? cart[0].full_name : '';
         let categoryName = cart[0] ? cart[0].category_name : '';
         let updatingData = {
-          service_id: req.body.service_id,
-          stylist_id: req.body.stylist_id ? req.body.stylist_id : null,
-          location_id: req.body.location_id ? req.body.location_id : null,
-          service_category_id: req.body.service_category_id ? req.body.service_category_id : null,
-          service_type: req.body.type ? req.body.type : 'simple-service',
+          service_id: service_id,
+          stylist_id: stylist_id ? stylist_id : null,
+          location_id: location_id ? location_id : null,
+          service_category_id: service_category_id ? service_category_id : null,
+          service_type: type ? type : 'simple-service',
           addressType,
           stylistName,
           categoryName,
-          stylist_type: req.body.stylist_type ? req.body.stylist_type : null,
-          title: req.body.title,
-          quantity: parseInt(req.body.quantity),
-          price: parseInt(req.body.sale_price) * parseInt(req.body.quantity),
-          sale_price: parseInt(req.body.sale_price),
-          regular_price: parseInt(req.body.regular_price),
-          profile_id: req.body.profile_id,
+          stylist_type: stylist_type ? stylist_type : null,
+          title: title,
+          quantity: quantity,
+          price: sale_price * quantity,
+          sale_price: sale_price,
+          regular_price: regular_price,
+          profile_id: profile_id,
         };
         return this.apiResponse.successResponseWithData(res, 'Service added to cart successfully.', updatingData);
       }
@@ -346,9 +358,9 @@ export class CartOrderService {
     }
   }
 
-  async getCart(req, user, res) {
+  async getCart(user: CurrentUserDto, res: Response) {
     try {
-      const cart = await this.customer_CartModel.findOne({ user_id: user._id });
+      const cart = await this.customerCartModel.findOne({ user_id: user._id });
       let wallet = await this.userModel.findOne({ _id: user._id }, { wallet_balance: 1 });
       if (cart != null) {
         let cartInfo = await this.getCartLocationStylistAndCat(cart._id);
@@ -384,29 +396,29 @@ export class CartOrderService {
     }
   }
 
-  async clearCart(req, user, res) {
+  async clearCart(user: CurrentUserDto, res: Response) {
     try {
-      await this.customer_CartModel.deleteOne({ user_id: user._id });
+      await this.customerCartModel.deleteOne({ user_id: user._id });
       return this.apiResponse.successResponseWithNoData(res, 'Cart cleared successfully.');
     } catch (err) {
       return this.apiResponse.successResponseWithNoData(res, err.message);
     }
   }
 
-  async updateCartItem(req, user, res) {
+  async updateCartItem(updateCartBody: UpdateCartItemDto, user: CurrentUserDto, res: Response) {
+    const { type, profile_id, cart_item_id, quantity, price } = updateCartBody;
     try {
-      let serviceType = req.body.type ? req.body.type : 'simple-service';
-      let isCustom = req.body.type ? true : false;
+      let serviceType = type ? type : 'simple-service';
+      let isCustom = type ? true : false;
       let service;
-
-      let cartItem = await this.customer_CartModel.aggregate([{ $match: { user_id: user._id } },
+      let cartItem = await this.customerCartModel.aggregate([{ $match: { user_id: user._id } },
       {
         $addFields: {
           profiles: {
             $filter: {
               input: '$cart_profiles',
               as: 'profiles',
-              cond: { $eq: ['$$profiles.profile_id', req.body.profile_id] },
+              cond: { $eq: ['$$profiles.profile_id', profile_id] },
             },
           },
         },
@@ -417,7 +429,7 @@ export class CartOrderService {
             $filter: {
               input: '$profiles.cart_items',
               as: 'item',
-              cond: { $eq: ['$$item._id', req.body.cart_item_id] },
+              cond: { $eq: ['$$item._id', cart_item_id] },
             },
           },
         },
@@ -425,12 +437,12 @@ export class CartOrderService {
       ]);
       if (cartItem.length > 0 && cartItem[0].items && cartItem[0].items.quantity > 0) {
         if (cartItem[0].items.is_custom == 'true') {
-          service = await this.customService.findOne({ _id: cartItem[0].items.service_id }, { quantity: 1 });
+          service = await this.customServiceModel.findOne({ _id: cartItem[0].items.service_id }, { quantity: 1 });
         } else {
           service = await this.serviceModel.findOne({ _id: cartItem[0].items.service_id }, { quantity: 1 });
         }
         if (service && service.quantity > 0) {
-          if (service.quantity >= parseInt(req.body.quantity)) {
+          if (service.quantity >= quantity) {
             console.log('check');
           } else {
             this.apiResponse.ErrorResponseWithoutData(res, 'This quantity can not be added for this service.');
@@ -438,7 +450,7 @@ export class CartOrderService {
           }
         }
       }
-      const cart = await this.customer_CartModel.findOne({ user_id: user._id, 'cart_profiles.profile_id': new Types.ObjectId(req.body.profile_id) });
+      const cart = await this.customerCartModel.findOne({ user_id: user._id, 'cart_profiles.profile_id': profile_id });
       if (cart) {
         const billData = await this.configModel.findOne({});
         let billDetails = {
@@ -451,20 +463,20 @@ export class CartOrderService {
         let addressType = cartInfo[0] && cartInfo[0].items.length > 0 ? cartInfo[0].items[0].address_type : '';
         let stylistName = cartInfo[0] && cartInfo[0].full_name ? cartInfo[0].full_name : '';
         let categoryName = cartInfo[0] && cartInfo[0].category_name ? cartInfo[0].category_name : '';
-        if (req.body.quantity == 0) {
-          const userResponse = await this.customer_CartModel.updateOne({ user_id: user._id, 'cart_profiles.profile_id': req.body.profile_id, 'cart_profiles.cart_items._id': req.body.cart_item_id },
+        if (quantity == 0) {
+          const userResponse = await this.customerCartModel.updateOne({ user_id: user._id, 'cart_profiles.profile_id': profile_id, 'cart_profiles.cart_items._id': cart_item_id },
             {
               $pull: {
                 'cart_profiles.$.cart_items': {
-                  _id: req.body.cart_item_id,
+                  _id: cart_item_id,
                 },
               },
             },
           );
-          let cartPro = await this.customer_CartModel.findOne({ user_id: user._id, 'cart_profiles.profile_id': new Types.ObjectId(req.body.profile_id) });
+          let cartPro = await this.customerCartModel.findOne({ user_id: user._id, 'cart_profiles.profile_id': new Types.ObjectId(profile_id) });
           for (let profile of cartPro.cart_profiles) {
             if (profile.cart_items.length > 0) {
-              await this.customer_CartModel.updateOne({ user_id: user._id },
+              await this.customerCartModel.updateOne({ user_id: user._id },
                 {
                   $pull: {
                     cart_profiles: { profile_id: profile.profile_id },
@@ -473,7 +485,7 @@ export class CartOrderService {
               );
             }
           }
-          let cartSaved = await this.customer_CartModel.findOne({ user_id: user._id, 'cart_profiles.profile_id': new Types.ObjectId(req.body.profile_id) });
+          let cartSaved = await this.customerCartModel.findOne({ user_id: user._id, 'cart_profiles.profile_id': new Types.ObjectId(profile_id) });
           let newResult;
           if (!cartSaved) {
             newResult = {};
@@ -493,21 +505,21 @@ export class CartOrderService {
               cart_profiles: cartSaved.cart_profiles,
             };
           }
-          await this.updateCartTotalDetails(req, user._id);
+          await this.updateCartTotalDetails(user._id);
           return this.apiResponse.successResponseWithData(res, 'Service Removed.', newResult);
         } else {
           for (var i = 0; i < cart.cart_profiles.length; i++) {
-            if (cart.cart_profiles[i].profile_id.toString() === req.body.profile_id && cart.cart_profiles[i].cart_items.length) {
+            if (cart.cart_profiles[i].profile_id.toString() === profile_id && cart.cart_profiles[i].cart_items.length) {
               for (var j = 0; j < cart.cart_profiles[i].cart_items.length; j++) {
-                if (cart.cart_profiles[i].cart_items[j]._id.toString() == req.body.cart_item_id) {
-                  cart.cart_profiles[i].cart_items[j].quantity = parseInt(req.body.quantity);
-                  cart.cart_profiles[i].cart_items[j].price = parseInt(req.body.quantity) * parseInt(req.body.price);
+                if (cart.cart_profiles[i].cart_items[j]._id == cart_item_id) {
+                  cart.cart_profiles[i].cart_items[j].quantity = quantity;
+                  cart.cart_profiles[i].cart_items[j].price = quantity * price;
                 }
               }
             }
           }
           const cartSaved = await cart.save();
-          this.updateCartTotalDetails(req, user._id);
+          this.updateCartTotalDetails(user._id);
           let newResult = {
             service_type: cartSaved.service_type,
             _id: cartSaved._id,
