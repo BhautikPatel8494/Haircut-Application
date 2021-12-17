@@ -4,11 +4,11 @@ import { Response } from 'express';
 import { Model, Types } from 'mongoose';
 import { CurrentUserDto } from 'src/authentication/authentication.dto';
 
-import { Configs } from 'src/Schema/config.schema';
-import { CustomerCarts } from 'src/Schema/customerCart.schema';
-import { CustomServices } from 'src/Schema/customService.schema';
+import { Configs } from 'src/schema/config.schema';
+import { CustomerCarts } from 'src/schema/customerCart.schema';
+import { CustomServices } from 'src/schema/customService.schema';
 import { Services } from 'src/schema/service.schema';
-import { Users } from 'src/Schema/user.schema';
+import { Users } from 'src/schema/user.schema';
 import { ApiResponse } from 'src/utils/apiResponse.service';
 import { AddServiceToCartDto, UpdateCartItemDto } from './cartOrder.dto';
 
