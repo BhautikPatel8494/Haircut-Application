@@ -1,10 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Schema as MongooseSchema } from 'mongoose';
 
-export type Customer_TransactionModelType = Customer_Transaction & Document;
-
-@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } })
-export class Customer_Transaction {
+@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }, collection: 'customer_transactions' })
+export class CustomerTransactions {
   @Prop({ type: MongooseSchema.Types.ObjectId, required: true })
   user_id: MongooseSchema.Types.ObjectId;
 
@@ -26,6 +24,9 @@ export class Customer_Transaction {
 
   @Prop({ type: String, enum: ['addition', 'deduction'], default: 'deduction' })
   transaction_type: string;
+
+  created_at: string;
+  updated_at: string;
 }
 
-export const Customer_TransactionSchema = SchemaFactory.createForClass(Customer_Transaction);
+export const CustomerTransactionSchema = SchemaFactory.createForClass(CustomerTransactions);

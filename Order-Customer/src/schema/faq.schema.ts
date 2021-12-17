@@ -1,9 +1,7 @@
 import { Schema, SchemaFactory, Prop } from '@nestjs/mongoose';
 
-export type FaqModeltype = FaqModel & Document;
-
-@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } })
-export class FaqModel {
+@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }, collection: 'faqs' })
+export class Faqs {
   @Prop({ type: String, required: true })
   title: string;
 
@@ -24,6 +22,9 @@ export class FaqModel {
 
   @Prop({ type: Boolean, default: false })
   deleted: boolean;
+
+  created_at: string;
+  updated_at: string;
 }
 
-export const FaqSchema = SchemaFactory.createForClass(FaqModel);
+export const FaqSchema = SchemaFactory.createForClass(Faqs);

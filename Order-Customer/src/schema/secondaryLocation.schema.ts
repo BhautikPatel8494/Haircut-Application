@@ -1,10 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Schema as MongooseSchema } from 'mongoose';
 
-export type SecondaryLocationModelType = Secondary_location & Document;
-
-@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } })
-export class Secondary_location {
+@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }, collection: 'secondary_locations' })
+export class SecondaryLocations {
     @Prop({
         type: MongooseSchema.Types.ObjectId,
         ref: 'locations',
@@ -59,6 +57,9 @@ export class Secondary_location {
 
     @Prop({ type: Boolean, default: false })
     deleted: boolean;
+
+    created_at: string;
+    updated_at: string;
 }
 
-export const SecondaryLocationSchema = SchemaFactory.createForClass(Secondary_location);
+export const SecondaryLocationSchema = SchemaFactory.createForClass(SecondaryLocations);

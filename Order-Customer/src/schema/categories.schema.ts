@@ -1,8 +1,6 @@
 import { Schema, SchemaFactory, Prop } from '@nestjs/mongoose';
 
-export type CategoryModeltype = Categories & Document;
-
-@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } })
+@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }, collection: 'categories' })
 export class Categories {
   @Prop({ type: String, required: true })
   name: string;

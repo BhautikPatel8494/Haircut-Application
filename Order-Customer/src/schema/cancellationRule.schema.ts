@@ -1,9 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 
-export type cancellationRuleType = Cancellation_rule & Document;
-
-@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } })
-export class Cancellation_rule {
+@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },collection: 'Cancellation_rule' })
+export class CancellationRule {
   
   @Prop({ type: String, enum: ['after', 'before'], required: true })
   cancel_type: string;
@@ -35,7 +33,10 @@ export class Cancellation_rule {
 
   @Prop({ type: Number, default: null })
   elapsed_time: number;
+
+  created_at: string;
+  updated_at: string;
 }
 
-export const cancellationRuleSchema =
-  SchemaFactory.createForClass(Cancellation_rule);
+export const CancellationRuleSchema =
+  SchemaFactory.createForClass(CancellationRule);

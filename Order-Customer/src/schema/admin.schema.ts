@@ -2,7 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 
 export type adminType = Admin & Document;
 
-@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } })
+@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }, collection: "Admin"})
 export class Admin {
   @Prop({ type: String, required: true })
   name: string;
@@ -24,6 +24,9 @@ export class Admin {
 
   @Prop({ type: String, default: null })
   authy_id: string;
+
+  created_at: string;
+  updated_at: string;
 }
 
 export const AdminSchema = SchemaFactory.createForClass(Admin);

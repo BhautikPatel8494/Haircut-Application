@@ -1,10 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Schema as MongooseSchema } from 'mongoose';
 
-export type Service_ProviderModelType = Service_Provider & Document;
-
-@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } })
-export class Service_Provider {
+@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }, collection: 'service_providers' })
+export class ServiceProviders {
 
   @Prop({ type: String, required: true })
   firstname: string;
@@ -141,11 +139,11 @@ export class Service_Provider {
   @Prop({ type: Array, default: [] })
   preferences: [];
 
-  @Prop({ type: Number, default: 0 })
-  lat: number;
-
-  @Prop({ type: Number, default: 0 })
-  lng: number;
+  @Prop({ type: Object })
+  register_location: {
+    type: string;
+    coordinates: [];
+  };
 
   @Prop({ type: Array, default: [] })
   blocked_customer: [type: string];
@@ -169,7 +167,7 @@ export class Service_Provider {
   stylist_referral_code: string;
 
   @Prop({ type: Object })
-  location: {
+  live_location: {
     type: string;
     coordinates: [];
   };
@@ -225,4 +223,8 @@ export class Service_Provider {
   active_schedule_type: string;
 }
 
-export const Service_ProviderSchema = SchemaFactory.createForClass(Service_Provider);
+const UpdatedSchema = SchemaFactory.createForClass(ServiceProviders);
+UpdatedSchema.index({ live_location: '2dsphere' })
+UpdatedSchema.index({ register_location: '2dsphere' })
+
+export const ServiceProviderSchema = UpdatedSchema;

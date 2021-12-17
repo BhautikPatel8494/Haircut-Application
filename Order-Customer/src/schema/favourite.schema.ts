@@ -1,10 +1,8 @@
 import { Schema, SchemaFactory, Prop } from '@nestjs/mongoose';
 import { Schema as MongooseSchema } from 'mongoose';
 
-export type FavouriteModeltype = Favourite & Document;
-
-@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } })
-export class Favourite {
+@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }, collection: 'favourites' })
+export class Favourites {
   @Prop({ type: MongooseSchema.Types.ObjectId, required: true })
   user_id: String;
 
@@ -16,6 +14,9 @@ export class Favourite {
 
   @Prop({ type: Number, default: 0 })
   type: number;
+
+  created_at: string;
+  updated_at: string;
 }
 
-export const FavouriteSchema = SchemaFactory.createForClass(Favourite);
+export const FavouriteSchema = SchemaFactory.createForClass(Favourites);

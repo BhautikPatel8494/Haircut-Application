@@ -1,10 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Schema as MongooseSchema } from 'mongoose';
 
-export type OrderModelType = Order & Document;
-
 @Schema()
-export class addOnSchema {
+class addOns {
   @Prop({ type: MongooseSchema.Types.ObjectId })
   service_id: MongooseSchema.Types.ObjectId;
 
@@ -24,8 +22,51 @@ export class addOnSchema {
   quantity: number;
 }
 
-@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } })
-export class Order {
+const addOnSchema = SchemaFactory.createForClass(addOns)
+
+@Schema()
+export class BillDetails {
+  @Prop({ type: Number, default: 0 })
+  total_service: number;
+
+  @Prop({ type: Number, default: 0 })
+  service_charges: number;
+
+  @Prop({ type: Number, default: 0 })
+  convenience_fee: number;
+
+  @Prop({ type: Number, default: 0 })
+  discount: number;
+
+  @Prop({ type: String })
+  voucher: string;
+
+  @Prop({ type: Number, default: 0 })
+  voucher_amount: number;
+
+  @Prop({ type: Number, default: 0 })
+  tax: number;
+
+  @Prop({ type: Number, default: 0 })
+  total_bill: number;
+
+  @Prop({ type: Number, default: 0 })
+  wallet_amount_used: number;
+
+  @Prop({ type: Number, default: 0 })
+  card_amount_used: number;
+
+  @Prop({ type: Number, default: 0 })
+  cancellation_charge: number
+  
+  @Prop({ type: Number, default: 0 })
+  cancellation_fee: number
+}
+
+const BillDetailSchema = SchemaFactory.createForClass(BillDetails);
+
+@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }, collection: 'orders' })
+export class Orders {
   @Prop({ type: String, required: true })
   order_number: string;
 
@@ -61,14 +102,17 @@ export class Order {
   })
   direct_order: number;
 
-  @Prop({ type: Number, default: new Date().getTime() })
-  date: number;
+  @Prop({ type: String, default: new Date().getTime() })
+  date: string;
 
   @Prop({ type: Object, default: {} })
-  selected_slot: object;
+  selected_slot: {
+    from_time: string,
+    to_time: string
+  };
 
   @Prop({ type: MongooseSchema.Types.ObjectId })
-  stylist_id: MongooseSchema.Types.ObjectId;
+  stylist_id: string;
 
   @Prop({ type: Array, required: true })
   cart: [];
@@ -76,23 +120,20 @@ export class Order {
   @Prop({ type: Object, required: true })
   active_location: object;
 
-  @Prop()
-  add_ons: [addOnSchema];
+  @Prop({ type: [addOnSchema], default: [] })
+  add_ons: [addOns];
 
   @Prop({ type: Number, enum: [0, 1], default: 0 })
   booking_type: number;
 
   @Prop({ type: Array, default: [] })
-  order_rejected_by: [];
+  order_rejected_by: [string];
 
   @Prop({ type: Number, default: 0 })
   reschedule_count: number;
 
-  @Prop({ type: Object, required: true })
-  bill_details: object;
-
-  @Prop({ type: Number, default: 0 })
-  wallet_amount_used: number;
+  @Prop({ type: BillDetailSchema, required: true })
+  bill_details: BillDetails;
 
   @Prop({ type: String, default: null })
   order_accepted_at: string;
@@ -117,6 +158,9 @@ export class Order {
 
   @Prop()
   expired_at: string;
+
+  created_at: string;
+  updated_at: string;
 }
 
-export const OrderSchema = SchemaFactory.createForClass(Order);
+export const OrderSchema = SchemaFactory.createForClass(Orders);
