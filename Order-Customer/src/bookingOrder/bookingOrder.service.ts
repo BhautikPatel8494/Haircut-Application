@@ -13,15 +13,15 @@ import {
 } from 'src/utils/constant';
 import { UtilityService } from 'src/utils/utility.service';
 import { ApiResponse } from 'src/utils/apiResponse.service';
-import { ServiceProviders } from 'src/Schema/serviceProvider.schema';
-import { CancellationRule } from 'src/Schema/cancellationRule.schema';
-import { CustomerTransactions } from 'src/Schema/customerTransaction.schema';
-import { Notifications } from 'src/Schema/notification.schema';
-import { Schedules } from 'src/Schema/schedule.schema';
-import { Orders } from 'src/Schema/order.schema';
-import { Users } from 'src/Schema/user.schema';
-import { CustomerCarts } from 'src/Schema/customerCart.schema';
-import { DeviceNotification } from 'src/Schema/deviceNotification.schema';
+import { ServiceProviders } from 'src/schema/serviceProvider.schema';
+import { CancellationRule } from 'src/schema/cancellationRule.schema';
+import { CustomerTransactions } from 'src/schema/customerTransaction.schema';
+import { Notifications } from 'src/schema/notification.schema';
+import { Schedules } from 'src/schema/schedule.schema';
+import { Orders } from 'src/schema/order.schema';
+import { Users } from 'src/schema/user.schema';
+import { CustomerCarts } from 'src/schema/customerCart.schema';
+import { DeviceNotification } from 'src/schema/deviceNotification.schema';
 import { CancleOrderDto, ChangeStatusDto, ConfirmOtpServiceDto, CreateDirectOrderDto, CreateOrderDto, FilterDto, RebookingOrderDto } from './bookingOrder.dto';
 import { CurrentUserDto } from 'src/authentication/authentication.dto';
 

@@ -6,11 +6,11 @@ import * as moment from 'moment';
 import * as schedule from "node-schedule"
 
 import { CUSTOMER_PROFILE } from './constant';
-import { Notifications } from 'src/Schema/notification.schema';
-import { Orders } from 'src/Schema/order.schema';
-import { Users } from 'src/Schema/user.schema';
-import { Configs } from 'src/Schema/config.schema';
-import { ServiceProviders } from 'src/Schema/serviceProvider.schema';
+import { Notifications } from 'src/schema/notification.schema';
+import { Orders } from 'src/schema/order.schema';
+import { Users } from 'src/schema/user.schema';
+import { Configs } from 'src/schema/config.schema';
+import { ServiceProviders } from 'src/schema/serviceProvider.schema';
 import { SendNotification } from './type';
 
 @Injectable()
