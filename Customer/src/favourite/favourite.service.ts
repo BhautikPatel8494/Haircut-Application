@@ -1,12 +1,15 @@
 import { Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { Model, Types } from "mongoose";
-import { CurrentUserDto } from "../home/dto/currentUser";
+
 import { Favourites } from "../schema/favourite.schema";
 import { Schedules } from "../schema/schedule.schema";
 import { Users } from "../schema/user.schema";
 import { ApiResponse } from "../utils/apiResponse.service";
+import { CurrentUserDto } from "../authentication/authentication.dto";
+import { CreateFavouriteDto, RemoveStylistOrService } from "./favourite.dto";
+import { FilterDto } from "../home/home.dto";
 import { constants } from "../utils/constant";
 
 @Injectable()
@@ -18,9 +21,9 @@ export class FavouriteService {
         private readonly apiResponse: ApiResponse
     ) { }
 
-    async addFavServiceStylist(req: Request, res: Response) {
+    async addFavServiceStylist(favouriteBody: CreateFavouriteDto, res: Response) {
         try {
-            const { user_id, stylist_id, service_id, type } = req.body;
+            const { user_id, stylist_id, service_id, type } = favouriteBody;
 
             if (!service_id && !stylist_id) {
                 return this.apiResponse.validationError(res, 'Please enter either stylist or service id');
@@ -57,9 +60,9 @@ export class FavouriteService {
     }
 
 
-    async listFavServices(req: Request, res: Response) {
+    async listFavServices(filterBody: FilterDto, res: Response) {
         try {
-            const { user_id } = req.body;
+            const { user_id } = filterBody;
 
             const favouriteInfo = await this.favouriteModel.aggregate([
                 { $match: { user_id: new Types.ObjectId(user_id), service_id: { $type: "objectId" } } },
@@ -127,9 +130,9 @@ export class FavouriteService {
     }
 
 
-    async listFavStylist(req: Request, res: Response) {
+    async listFavStylist(filterBody: FilterDto, res: Response) {
         try {
-            const { user_id } = req.body;
+            const { user_id } = filterBody;
 
             const userInfo = await this.userModel.findOne({ _id: user_id }, { blocked_stylist: 1 })
             const blocked_stylists = userInfo && userInfo.blocked_stylist.length > 0 ? userInfo.blocked_stylist : [];
@@ -160,7 +163,7 @@ export class FavouriteService {
                     $project: {
                         _id: 1,
                         "stylist._id": 1,
-                        "stylist.online":1,
+                        "stylist.online": 1,
                         "stylist.experience": 1,
                         "stylist.active_schedule_type": 1,
                         "stylist.profile": { $concat: [constants.STYLIST_PROFILE, "$stylist.profile"] },
@@ -171,7 +174,8 @@ export class FavouriteService {
                         "stylist.middlename": 1
                     }
                 }
-            ])
+            ]);
+
             if (favStylistInfo.length > 0) {
                 let updatedStylistDetail = [];
                 let isSlotAvailable = 0
@@ -201,9 +205,9 @@ export class FavouriteService {
     }
 
 
-    async removeFavServiceOrStylist(user: CurrentUserDto, req: Request, res: Response) {
+    async removeFavServiceOrStylist(user: CurrentUserDto, favouriteBody: RemoveStylistOrService, res: Response) {
         try {
-            const { service_id, stylist_id } = req.body;
+            const { service_id, stylist_id } = favouriteBody;
 
             let query = {};
             if (service_id) {

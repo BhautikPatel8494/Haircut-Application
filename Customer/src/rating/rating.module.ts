@@ -1,9 +1,10 @@
 import { Module } from "@nestjs/common";
 import { MongooseModule } from "@nestjs/mongoose";
-import { RatingSchema } from "../schema/rating.schema";
-import { ApiResponse } from "../utils/apiResponse.service";
+
 import { RatingController } from "./rating.controller";
 import { RatingService } from "./rating.service";
+import { RatingSchema } from "../schema/rating.schema";
+import { ApiResponse } from "../utils/apiResponse.service";
 
 @Module({
     imports: [MongooseModule.forFeature([

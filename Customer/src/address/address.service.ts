@@ -1,10 +1,12 @@
 import { Injectable, Res } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
-import { Request, Response } from 'express'
+import { Response } from 'express'
 import { Model, Types } from "mongoose";
-import { CurrentUserDto } from "../home/dto/currentUser";
+
 import { Users } from "../schema/user.schema";
 import { ApiResponse } from "../utils/apiResponse.service";
+import { CurrentUserDto } from "../authentication/authentication.dto";
+import { ActivateAddressDto, CreateAddressDto, DeleteAddressDto } from "./address.dto";
 
 @Injectable()
 export class AddressService {
@@ -13,9 +15,9 @@ export class AddressService {
         private readonly apiResponse: ApiResponse
     ) { }
 
-    async addLocation(user: CurrentUserDto, req: Request, res: Response) {
+    async addLocation(user: CurrentUserDto, addressBody: CreateAddressDto, res: Response) {
         try {
-            const { address, address_id, title, address_type, state, country, country_code, city, lat, lng, zip_code } = req.body;
+            const { address, address_id, title, address_type, state, country, country_code, city, lat, lng, zip_code } = addressBody;
 
             if (address_id) {
                 const addressInfo = await this.userModel.findOne({ _id: user._id }, { addresses: 1 });
@@ -37,6 +39,7 @@ export class AddressService {
                         coordinates: [parseFloat(lng), parseFloat(lat)]
                     }
                 }
+
                 if (addressInfo && addressInfo.addresses && addressInfo.addresses.length > 0) {
                     for (const address of addressInfo.addresses) {
                         if (address.active) {
@@ -71,16 +74,16 @@ export class AddressService {
                 const responseObj = {
                     _id: new Types.ObjectId(),
                     active: true,
-                    address: req.body.address,
-                    title: (req.body.title) ? req.body.title : '',
-                    address_type: req.body.address_type,
-                    state: req.body.state,
-                    country: req.body.country,
-                    country_code: req.body.country_code,
-                    city: req.body.city,
-                    zip_code: req.body.zip_code ? req.body.zip_code : '',
-                    lat: req.body.lat,
-                    lng: req.body.lng,
+                    address: address,
+                    title: title ? title : '',
+                    address_type: address_type,
+                    state: state,
+                    country: country,
+                    country_code: country_code,
+                    city: city,
+                    zip_code: zip_code ? zip_code : '',
+                    lat: lat,
+                    lng: lng,
                     location: {
                         type: "Point",
                         coordinates: [parseFloat(lng), parseFloat(lat)]
@@ -131,9 +134,9 @@ export class AddressService {
     }
 
 
-    async deleteAddress(user: CurrentUserDto, req: Request, @Res() res: Response) {
+    async deleteAddress(user: CurrentUserDto, addressBody: DeleteAddressDto, @Res() res: Response) {
         try {
-            const { address_id } = req.body;
+            const { address_id } = addressBody;
 
             const userInfo = await this.userModel.findOne({
                 _id: user._id,
@@ -158,9 +161,9 @@ export class AddressService {
     }
 
 
-    async activateAddress(user: CurrentUserDto, req: Request, res: Response) {
+    async activateAddress(user: CurrentUserDto, addressBody: ActivateAddressDto, res: Response) {
         try {
-            const { address_id, active } = req.body;
+            const { address_id, active } = addressBody;
 
             const userInfo = await this.userModel.findOne({
                 _id: user._id,

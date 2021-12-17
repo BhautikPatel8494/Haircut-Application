@@ -3,13 +3,13 @@ import { MongooseModule } from "@nestjs/mongoose";
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from "@nestjs/passport";
 
-import { UserSchema } from "../schema/user.schema";
-import { JwtStrategy } from "./strategy/local.strategy";
-import { Utility } from "../utils/utility.service";
 import { AuthenticationController } from "./authentication.controller";
 import { AuthenticationService } from "./authentication.service";
-import { ApiResponse } from "../utils/apiResponse.service";
+import { UserSchema } from "../schema/user.schema";
 import { OrderSchema } from "../schema/order.schema";
+import { JwtStrategy } from "./strategy/local.strategy";
+import { Utility } from "../utils/utility.service";
+import { ApiResponse } from "../utils/apiResponse.service";
 
 @Module({
     imports: [

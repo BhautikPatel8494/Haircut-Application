@@ -24,6 +24,47 @@ class addOns {
 
 const addOnSchema = SchemaFactory.createForClass(addOns)
 
+@Schema()
+export class BillDetails {
+  @Prop({ type: Number, default: 0 })
+  total_service: number;
+
+  @Prop({ type: Number, default: 0 })
+  service_charges: number;
+
+  @Prop({ type: Number, default: 0 })
+  convenience_fee: number;
+
+  @Prop({ type: Number, default: 0 })
+  discount: number;
+
+  @Prop({ type: String })
+  voucher: string;
+
+  @Prop({ type: Number, default: 0 })
+  voucher_amount: number;
+
+  @Prop({ type: Number, default: 0 })
+  tax: number;
+
+  @Prop({ type: Number, default: 0 })
+  total_bill: number;
+
+  @Prop({ type: Number, default: 0 })
+  wallet_amount_used: number;
+
+  @Prop({ type: Number, default: 0 })
+  card_amount_used: number;
+
+  @Prop({ type: Number, default: 0 })
+  cancellation_charge: number;
+
+  @Prop({ type: Number, default: 0 })
+  cancellation_fee: number;
+}
+
+const BillDetailSchema = SchemaFactory.createForClass(BillDetails);
+
 @Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }, collection: 'orders' })
 export class Orders {
   @Prop({ type: String, required: true })
@@ -68,7 +109,7 @@ export class Orders {
   selected_slot: object;
 
   @Prop({ type: MongooseSchema.Types.ObjectId })
-  stylist_id: MongooseSchema.Types.ObjectId;
+  stylist_id: string;
 
   @Prop({ type: Array, required: true })
   cart: [];
@@ -88,11 +129,8 @@ export class Orders {
   @Prop({ type: Number, default: 0 })
   reschedule_count: number;
 
-  @Prop({ type: Object, required: true })
-  bill_details: object;
-
-  @Prop({ type: Number, default: 0 })
-  wallet_amount_used: number;
+  @Prop({ type: BillDetailSchema, required: true })
+  bill_details: BillDetails;
 
   @Prop({ type: String, default: null })
   order_accepted_at: string;

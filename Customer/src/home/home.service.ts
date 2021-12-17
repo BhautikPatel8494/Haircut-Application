@@ -8,7 +8,6 @@ import { Categories } from "../schema/categories.schema";
 import { constants, WEEKDAY_LIST } from '../utils/constant'
 import { ApiResponse } from "../utils/apiResponse.service"
 import { Configs } from "../schema/config.schema";
-import { CurrentUserDto } from "./dto/currentUser";
 import { Users } from "../schema/user.schema";
 import { Locations } from "../schema/location.schema";
 import { Services } from "../schema/service.schema";
@@ -20,6 +19,8 @@ import { Schedules } from "../schema/schedule.schema";
 import { Utility } from "../utils/utility.service";
 import { CustomerTransactions } from "../schema/customerTransaction.schema";
 import { ServiceProviders } from "../schema/serviceProvider.schema";
+import { CreateCustomerTransactionDto, FilterDto } from "./home.dto";
+import { CurrentUserDto } from "../authentication/authentication.dto";
 
 @Injectable()
 export class HomeService {
@@ -40,12 +41,12 @@ export class HomeService {
         private readonly utility: Utility
     ) { }
 
-    async listCategories(req: Request, res: Response) {
+    async listCategories(filterBody: FilterDto, res: Response) {
         try {
-            const { page, limit } = req.body;
+            const { page, limit } = filterBody;
 
-            const pages = page ? parseInt(page) : 1
-            const limits = limit ? parseInt(limit) : 10
+            const pages = page ? page : 1
+            const limits = limit ? limit : 10
             const skip = (limits * pages) - limits;
             const categoryInfo = await this.categoryModel.aggregate([
                 {
@@ -94,12 +95,12 @@ export class HomeService {
     }
 
 
-    async serviceListing(user: CurrentUserDto, req: Request, res: Response) {
+    async serviceListing(user: CurrentUserDto, filterBody: FilterDto, res: Response) {
         try {
-            const { category_id, limit, page, subcategory_id, stylist_level, profile_id, age_group } = req.body
+            const { category_id, limit, page, subcategory_id, stylist_level, profile_id, age_group } = filterBody;
 
-            const pages = page ? parseInt(page) : 1;
-            const limits = limit ? parseInt(limit) : 10;
+            const pages = page ? page : 1;
+            const limits = limit ? limit : 10;
             const skip = (limit * pages) - limit;
 
             const subcategoryId = subcategory_id ? subcategory_id : 'all';
@@ -475,15 +476,12 @@ export class HomeService {
                         }
                     }
 
-                    if (pages < 1) {
-                        return this.apiResponse.successResponseWithData(res, "Services found successfully.", []);
-                    } else {
-                        if (all == services.length) {
-                            return this.apiResponse.successResponseWithExtraData(res, "Services found successfully.", {
-                                subcategory_id: '',
-                                sub_categories: ''
-                            }, services);
-                        }
+
+                    if (all == services.length) {
+                        return this.apiResponse.successResponseWithExtraData(res, "Services found successfully.", {
+                            subcategory_id: '',
+                            sub_categories: ''
+                        }, services);
                     }
                 } else {
                     return this.apiResponse.successResponseWithExtraData(res, "No records found.", {
@@ -498,12 +496,12 @@ export class HomeService {
     }
 
 
-    async exploreService(req: Request, res: Response) {
+    async exploreService(filterBody: FilterDto, res: Response) {
         try {
-            const { page, limit, category_id, lat, lng, subcategory_id, stylist_level } = req.body;
+            const { page, limit, category_id, lat, lng, subcategory_id, stylist_level } = filterBody;
 
-            const pages = page ? parseInt(page) : 1;
-            const limits = limit ? parseInt(limit) : 10;
+            const pages = page ? page : 1;
+            const limits = limit ? limit : 10;
             const skip = (limits * pages) - limits;
 
             const config = await this.configModel.findOne({}, { customer_stylist_radius: 1 })
@@ -703,15 +701,11 @@ export class HomeService {
                         }
                     }
 
-                    if (pages < 1) {
-                        return this.apiResponse.successResponseWithData(res, "Services found successfully.", []);
-                    } else {
-                        if (all == services.length) {
-                            return this.apiResponse.successResponseWithExtraData(res, "Services found successfully.", {
-                                subcategory_id: '',
-                                sub_categories: ''
-                            }, services);
-                        }
+                    if (all == services.length) {
+                        return this.apiResponse.successResponseWithExtraData(res, "Services found successfully.", {
+                            subcategory_id: '',
+                            sub_categories: ''
+                        }, services);
                     }
                 } else {
                     return this.apiResponse.successResponseWithExtraData(res, "No records found.", {
@@ -727,9 +721,9 @@ export class HomeService {
     }
 
 
-    async setPreference(req: Request, res: Response) {
+    async setPreference(preferenceBody: { user_id: string, preference: [] }, res: Response) {
         try {
-            const { user_id, preference } = req.body;
+            const { user_id, preference } = preferenceBody;
 
             const userInfo = await this.userModel.findOne({ _id: user_id }, { _id: 1 })
             if (!userInfo) {
@@ -744,12 +738,12 @@ export class HomeService {
     }
 
 
-    async searchStylist(user: CurrentUserDto, req: Request, res: Response) {
+    async searchStylist(user: CurrentUserDto, filterBody: FilterDto, res: Response) {
         try {
-            const { page, limit, search, gender_filter, rating_filter, name_filter, sort, stylist_level } = req.body;
+            const { page, limit, search, gender_filter, rating_filter, name_filter, sort, stylist_level } = filterBody;
 
-            const pages = page ? parseInt(page) : 1
-            const limits = limit ? parseInt(limit) : 10;
+            const pages = page ? page : 1
+            const limits = limit ? limit : 10;
             const skip = (limits * pages) - limits;
 
             const userInfo = await this.userModel.findOne({ _id: user._id, 'addresses.active': true });
@@ -812,7 +806,7 @@ export class HomeService {
                                 type: "Point",
                                 coordinates: [parseFloat(activeAddress.lng), parseFloat(activeAddress.lat)]
                             },
-                            key: "location",
+                            key: "live_location",
                             distanceField: "distance",
                             maxDistance: radius * constants.METERS_PER_MILE,
                             spherical: true
@@ -928,10 +922,10 @@ export class HomeService {
                     );
 
                     const stylistInfo = await this.serviceProviderModel.aggregate(Query);
-                    if (pages < 1) {
-                        return this.apiResponse.successResponseWithData(res, "Stylist found successfully", []);
-                    } else {
+                    if (stylistInfo.length > 0) {
                         return this.apiResponse.successResponseWithData(res, "Stylist found successfully", stylistInfo);
+                    } else {
+                        return this.apiResponse.ErrorResponse(res, "Stylist's not found.", {});
                     }
                 } else {
                     return this.apiResponse.ErrorResponse(res, "No active location found.", {});
@@ -945,14 +939,14 @@ export class HomeService {
     }
 
 
-    async showAllActiveStylist(user: CurrentUserDto, req: Request, res: Response) {
+    async showAllActiveStylist(user: CurrentUserDto, filterBody: Request, res: Response) {
         try {
-            const { page, limit, gender_filter, rating_filter, name_filter, stylist_type, sort } = req.body;
+            const { page, limit, gender_filter, rating_filter, name_filter, stylist_type, sort } = filterBody.body;
 
             const userInfo = await this.userModel.findOne({ _id: user._id, 'addresses.active': true });
             if (userInfo) {
-                const pages = page ? parseInt(page) : 1
-                const limits = limit ? parseInt(limit) : 10;
+                const pages = page ? page : 1
+                const limits = limit ? limit : 10;
                 const skip = (limits * pages) - limits;
 
                 const activeAddress = userInfo.addresses.find(elem => elem.active ? elem : null)
@@ -965,7 +959,7 @@ export class HomeService {
                     const stylistTypeFilter = stylist_type ? stylist_type : null;
                     const sortFilter = sort ? sort : "avg_rating";
                     const ratingFilter = rating_filter ? parseInt(rating_filter) : 0;
-                    const requestId = req.headers.requestid;
+                    const requestId = filterBody.headers.requestid;
                     let sortingMatchObj = {}
                     let genderMatchObj = {}
                     let ratingMatchObj = {}
@@ -997,7 +991,7 @@ export class HomeService {
                     if (nameFilter) {
                         nameMatchObj = { $match: { full_name: { $regex: nameFilter, $options: "i" } } }
                     } else {
-                        nameMatchObj = { $match: { online: 0 } }
+                        nameMatchObj = { $match: { online: { $in: [0, 1] }} }
                     }
 
                     if (ratingFilter === 0) {
@@ -1012,16 +1006,16 @@ export class HomeService {
                                 type: "Point",
                                 coordinates: [parseFloat(activeAddress.lng), parseFloat(activeAddress.lat)]
                             },
-                            key: "location",
+                            key: "live_location",
                             query: {
-                                online: 0,
+                                online: 1,
                                 registration_status: "accepted",
                                 deleted: false,
                                 status: true
                             },
                             distanceField: "customer_distance",
-                            maxDistance: radius * constants.METERS_PER_MILE,
-                            distanceMultiplier: constants.MILES_PER_METER,
+                            // maxDistance: radius * constants.METERS_PER_MILE,
+                            // distanceMultiplier: constants.MILES_PER_METER,
                             spherical: true
                         }
                     },
@@ -1090,7 +1084,7 @@ export class HomeService {
                             firstname: 1,
                             lastname: 1,
                             middlename: 1,
-                            location: 1,
+                            live_location: 1,
                             radius: 1,
                             completed_order_count: {
                                 $cond: ["$completed_orders", { $size: "$completed_orders" }, 0]
@@ -1150,9 +1144,7 @@ export class HomeService {
                             return res
                         }
 
-                        if (pages < 1) {
-                            paginatedResult = { totalPage: 0, currentPage: 0, result: [] }
-                        } else if (pages) {
+                        if (pages) {
                             paginatedResult = { totalPage: Math.ceil(stylistArr.length / limits), currentPage: stylistArr.length > 0 ? pages : 0, result: stylistArr }
                         } else {
                             paginatedResult = { totalPage: Math.ceil(stylistArr.length / limits), result: stylistArr }
@@ -1174,12 +1166,12 @@ export class HomeService {
     }
 
 
-    async getAllActiveStylist(user: CurrentUserDto, req: Request, res: Response) {
+    async getAllActiveStylist(user: CurrentUserDto, filterBody: FilterDto, res: Response) {
         try {
-            const { page, limit, stylist_type, gender_filter, name_filter, rating_filter, sort } = req.body;
+            const { page, limit, stylist_type, gender_filter, name_filter, rating_filter, sort } = filterBody;
 
-            const pages = page ? parseInt(page) : 1;
-            const limits = limit ? parseInt(limit) : 10;
+            const pages = page ? page : 1;
+            const limits = limit ? limit : 10;
             const skip = (limits * pages) - limits;
 
             const userInfo = await this.userModel.findOne({ _id: user._id, 'addresses.active': true });
@@ -1235,7 +1227,7 @@ export class HomeService {
                                     type: "Point",
                                     coordinates: [parseFloat(activeAddress.lng), parseFloat(activeAddress.lat)]
                                 },
-                                key: "location",
+                                key: "live_location",
                                 query: {
                                     online: 1,
                                     registration_status: "accepted",
@@ -1313,7 +1305,7 @@ export class HomeService {
                                 firstname: 1,
                                 lastname: 1,
                                 middlename: 1,
-                                location: 1,
+                                live_location: 1,
                                 radius: 1,
                                 completed_order_count: {
                                     $cond: ["$completed_orders", { $size: "$completed_orders" }, 0]
@@ -1366,9 +1358,7 @@ export class HomeService {
                         }
 
                         let paginatedResult = {};
-                        if (pages > 1) {
-                            paginatedResult = { totalPage: 0, currentPage: 0, result: [] }
-                        } else if (pages) {
+                        if (pages) {
                             paginatedResult = { totalPage: Math.ceil(stylistArr.length / limits), currentPage: stylistArr.length > 0 ? pages : 0, result: stylistArr }
                         } else {
                             paginatedResult = { totalPage: Math.ceil(stylistArr.length / limits), result: stylistArr }
@@ -1389,12 +1379,12 @@ export class HomeService {
     }
 
 
-    async stylistDetail(user: CurrentUserDto, req: Request, res: Response) {
+    async stylistDetail(user: CurrentUserDto, filterBody: FilterDto, res: Response) {
         try {
-            const { page, limit, stylist_id, filter, profile_id } = req.body;
+            const { page, limit, stylist_id, filter, profile_id } = filterBody;
 
             const pages = page ? page : 1;
-            const limits = limit ? parseInt(limit) : 10;
+            const limits = limit ? limit : 10;
             const skip = (limits * pages) - limits;
 
             const favouriteStylist = await this.favouriteModel.findOne({ stylist_id: stylist_id, user_id: user._id }, { created_at: -1 });
@@ -1560,15 +1550,14 @@ export class HomeService {
                 return this.apiResponse.successResponseWithData(res, 'Record not found!', []);
             }
         } catch (e) {
-            console.log(`e`, e)
             return this.apiResponse.ErrorResponse(res, e.message, []);
         }
     }
 
 
-    async findNearByStylist(req: Request, res: Response) {
+    async findNearByStylist(filterBody: Request, res: Response) {
         try {
-            const { lng, lat } = req.body;
+            const { lng, lat } = filterBody.body;
 
             const latitude = lat ? lat : 0;
             const longitude = lng ? lng : 0;
@@ -1580,7 +1569,7 @@ export class HomeService {
                             type: "Point",
                             coordinates: [parseFloat(longitude), parseFloat(latitude)]
                         },
-                        key: "location",
+                        key: "live_location",
                         query: {
                             registration_status: "accepted",
                             deleted: false,
@@ -1608,9 +1597,9 @@ export class HomeService {
     }
 
 
-    async stylistAvailability(user: CurrentUserDto, req: Request, res: Response) {
+    async stylistAvailability(user: CurrentUserDto, filterBody: FilterDto, res: Response) {
         try {
-            const { stylist_id } = req.body;
+            const { stylist_id } = filterBody;
 
             const stylistInfo = await this.serviceProviderModel.findOne({ _id: stylist_id });
             const orderInfo = await this.orderModel.find({ stylist_id: stylist_id, booking_status: { $in: [1, 2, 3] } });
@@ -1630,9 +1619,9 @@ export class HomeService {
     }
 
 
-    async bookingDetail(req: Request, res: Response) {
+    async bookingDetail(filterBody: FilterDto, res: Response) {
         try {
-            const { order_id, } = req.body;
+            const { order_id } = filterBody;
 
             const orderInfo = await this.orderModel.aggregate([
                 { $match: { _id: new Types.ObjectId(order_id) } },
@@ -1709,12 +1698,12 @@ export class HomeService {
     }
 
 
-    async transactionListing(user: CurrentUserDto, req: Request, res: Response) {
+    async transactionListing(user: CurrentUserDto, filterBody: Request, res: Response) {
         try {
-            const { page, limit, transaction_type } = req.body;
-            const { from_date, to_date } = req.query;
+            const { page, limit, transaction_type } = filterBody.body;
+            const { from_date, to_date } = filterBody.query;
 
-            const pages = page ? parseInt(page) : 1
+            const pages = parseInt(page) ? parseInt(page) : 1
             const limits = limit ? parseInt(limit) : 10
             const skip = (limits * pages) - limits;
 
@@ -1762,7 +1751,7 @@ export class HomeService {
     }
 
 
-    async getAdminTimeSlots(req: Request, res: Response) {
+    async getAdminTimeSlots(res: Response) {
         try {
             const configSetting = await this.configModel.findOne({})
             if (configSetting.schedule && configSetting.schedule.length > 0) {
@@ -1783,9 +1772,9 @@ export class HomeService {
     }
 
 
-    async getStylistTimeSlots(req: Request, res: Response) {
+    async getStylistTimeSlots(filterBody: FilterDto, res: Response) {
         try {
-            const { stylist_id } = req.body;
+            const { stylist_id } = filterBody;
 
             const responseObj = {
                 start_date: 0,
@@ -1878,17 +1867,17 @@ export class HomeService {
     }
 
 
-    async paymentListing(user: CurrentUserDto, req: Request, res: Response) {
+    async paymentListing(user: CurrentUserDto, filterBody: Request, res: Response) {
         try {
-            const { page, limit } = req.body;
-            const { from_date, to_date } = req.query;
+            const { page, limit } = filterBody.body;
+            const { from_date, to_date } = filterBody.query;
 
-            const pages = page ? parseInt(page) : 1
+            const pages = parseInt(page) ? parseInt(page) : 1
             const limits = limit ? parseInt(limit) : 10
             const skip = (limits * pages) - limits
             let query = {};
 
-            if (req.query.from_date && req.query.to_date) {
+            if (from_date && to_date) {
                 query = { user_id: new Types.ObjectId(user._id), type: "payment", created_at: { $gte: from_date, $lte: to_date } }
             } else {
                 query = { user_id: new Types.ObjectId(user._id), type: "payment" }
@@ -1907,11 +1896,9 @@ export class HomeService {
             ])
 
             if (customerTransactionInfo.length > 0) {
-                if (pages < 1) {
-                    res.status(200).json({ status: 200, message: "No transaction found!", data: [] })
-                } else {
-                    return this.apiResponse.successResponseWithData(res, 'Record found!', customerTransactionInfo);
-                }
+                return this.apiResponse.successResponseWithData(res, 'Record found!', customerTransactionInfo);
+            } else {
+                return this.apiResponse.successResponseWithData(res, 'Record not found!', []);
             }
         } catch (e) {
             return this.apiResponse.ErrorResponse(res, e.message, []);
@@ -1919,9 +1906,13 @@ export class HomeService {
     }
 
 
-    async addToWallet(user: CurrentUserDto, req: Request, res: Response) {
+    // async refundToCard(user: CurrentUserDto, req: Request, res: Response) {
+
+    // }
+
+    async addToWallet(user: CurrentUserDto, customerTransaction: CreateCustomerTransactionDto, res: Response) {
         try {
-            const { amount, stripe_customer_id } = req.body;
+            const { amount, stripe_customer_id } = customerTransaction;
 
             await this.utility.createCharge(amount, stripe_customer_id);
             await this.customerTransactionModel.create({

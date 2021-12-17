@@ -3,7 +3,7 @@ import { Schema as MongooseSchema } from 'mongoose';
 
 @Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } })
 class FamilyMembers {
-  _id: string;
+  _id?: string;
 
   @Prop({ type: String, required: true })
   firstname: string;
@@ -12,10 +12,10 @@ class FamilyMembers {
   lastname: string;
 
   @Prop({ type: String, default: null })
-  profile: string;
+  profile: any;
 
-  @Prop({ type: Date, required: true })
-  dob: Date;
+  @Prop({ type: String, required: true })
+  dob: string;
 
   @Prop({
     type: String,
@@ -24,14 +24,14 @@ class FamilyMembers {
   })
   relation: string;
 
-  @Prop({ type: String, enum: ['men', 'women', 'kid', 'senior'] })
+  @Prop({ type: String, enum: ['men', 'women', 'kids', 'senior'] })
   user_type: string;
 
   @Prop({ type: Boolean, default: false })
-  default_profile: boolean;
+  default_profile?: boolean;
 
-  created_at: string
-  updated_at: string
+  created_at?: string
+  updated_at?: string
 }
 
 const FamilyMemberSchema = SchemaFactory.createForClass(FamilyMembers);
@@ -55,9 +55,8 @@ export class Addresses {
   @Prop({ type: String, required: true })
   lng: string;
 
-
   @Prop({ type: Object })
-  live_location: {
+  location: {
     type: string;
     coordinates: []
   };
@@ -104,6 +103,41 @@ class BlockStylists {
 const BlockStylistSchema = SchemaFactory.createForClass(BlockStylists);
 
 @Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } })
+class Cards {
+  @Prop({ type: String, default: null })
+  type: string;
+
+  @Prop({ type: String, default: null })
+  logo: string;
+
+  @Prop({ type: String, default: null })
+  lastd: string;
+
+  @Prop({ type: String, default: null })
+  customerId: string;
+
+  @Prop({ type: String, default: null })
+  exp_month: string;
+
+  @Prop({ type: String, default: null })
+  exp_year: string;
+
+  @Prop({ type: String, default: null })
+  account_holder_name: string;
+
+  @Prop({ type: String, default: null })
+  zip_code: string;
+
+  @Prop({ type: Boolean, default: false })
+  isDefault: boolean;
+
+  created_at: string;
+  updated_at: string;
+}
+
+const CardSchema = SchemaFactory.createForClass(Cards);
+
+@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } })
 export class Users {
   @Prop({ type: String, required: true })
   firstname: string;
@@ -135,14 +169,8 @@ export class Users {
   @Prop({ type: String, enum: ['men', 'women', 'other'], required: true })
   gender: string;
 
-  @Prop({ type: Date })
-  dob: Date;
-
-  @Prop({ type: Object })
-  register_location: {
-    type: string;
-    coordinates: []
-  };
+  @Prop({ type: String })
+  dob: string;
 
   @Prop({ type: Array, default: [] })
   preference: [];
@@ -152,7 +180,7 @@ export class Users {
 
   @Prop({
     type: String,
-    enum: ['men', 'women', 'kid', 'senior'],
+    enum: ['men', 'women', 'kids', 'senior'],
     required: true,
   })
   user_type: string;
@@ -172,28 +200,17 @@ export class Users {
   @Prop({ type: [BlockStylistSchema], default: [] })
   blocked_stylist: [BlockStylists];
 
-  @Prop()
-  cards: [
-    {
-      type: { type: string };
-      logo: { type: string };
-      lastd: { type: string };
-      customerId: { type: string };
-      exp_month: { type: string };
-      exp_year: { type: string };
-      account_holder_name: { type: string };
-      zip_code: { type: string };
-      isDefault: { type: boolean; default: false };
-      createdAt: { type: Date };
-      updatedAt: { type: Date };
-    },
-  ];
+  @Prop({ type: [CardSchema], default: [] })
+  cards: [Cards];
 
   @Prop({ type: Boolean, default: true })
   status: boolean;
 
   @Prop({ type: Array, default: [] })
-  devices: [];
+  devices: [{
+    device: string;
+    token: string;
+  }];
 
   created_at: string
   updated_at: string

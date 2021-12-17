@@ -10,6 +10,8 @@ import { AuthenticationModule } from './authentication/authentication.module';
 import { AddressModule } from './address/address.module';
 import { FavouriteModule } from './favourite/favourite.module';
 import { RatingModule } from './rating/rating.module';
+import { ContactModule } from './contact/contact.module';
+import { BlockModule } from './block/block.module';
 config()
 
 @Module({
@@ -24,7 +26,9 @@ config()
     HomeModule,
     AddressModule,
     FavouriteModule,
-    RatingModule
+    RatingModule,
+    ContactModule,
+    BlockModule
   ],
   providers: [{
     provide: APP_GUARD,

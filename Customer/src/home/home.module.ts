@@ -1,5 +1,8 @@
 import { Module } from "@nestjs/common";
 import { MongooseModule } from "@nestjs/mongoose";
+
+import { HomeController } from "./home.controller";
+import { HomeService } from "./home.service";
 import { CustomerCartSchema } from "../schema/customerCart.schema";
 import { CategoriesSchema } from "../schema/categories.schema";
 import { CustomerTransactionSchema } from "../schema/customerTransaction.schema";
@@ -14,8 +17,6 @@ import { ServiceProviderSchema } from "../schema/serviceProvider.schema";
 import { UserSchema } from "../schema/user.schema";
 import { ApiResponse } from "../utils/apiResponse.service";
 import { Utility } from "../utils/utility.service";
-import { HomeController } from "./home.controller";
-import { HomeService } from "./home.service";
 
 @Module({
     imports: [MongooseModule.forFeature([

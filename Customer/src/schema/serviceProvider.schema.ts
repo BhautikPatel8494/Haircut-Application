@@ -167,7 +167,13 @@ export class ServiceProviders {
   stylist_referral_code: string;
 
   @Prop({ type: Object })
-  location: {
+  register_location: {
+    type: string;
+    coordinates: []
+  };
+
+  @Prop({ type: Object })
+  live_location: {
     type: string;
     coordinates: [];
   };
@@ -223,4 +229,8 @@ export class ServiceProviders {
   active_schedule_type: string;
 }
 
-export const ServiceProviderSchema = SchemaFactory.createForClass(ServiceProviders);
+const UpdatedSchema = SchemaFactory.createForClass(ServiceProviders);
+UpdatedSchema.index({ live_location: '2dsphere' })
+UpdatedSchema.index({ register_location: '2dsphere' })
+
+export const ServiceProviderSchema = UpdatedSchema

@@ -1,31 +1,39 @@
-import { Controller, Get, Post, Req, Res } from "@nestjs/common";
+import { Body, Controller, Get, Post, Req, Res, UploadedFile, UploadedFiles, UseInterceptors } from "@nestjs/common";
 import { Request, Response } from "express";
-import { CurrentUserDto } from "../home/dto/currentUser";
+
 import { AuthenticationService } from "./authentication.service";
 import { CurrentUser } from "./guard/user.decorator";
+import { CommonMemberDto, CreateFamilyMemberDto, CurrentUserDto, UpdateFamilyMemberDto, UpdateUserDto } from "./authentication.dto";
+import { AnyFilesInterceptor } from "@nestjs/platform-express";
+import { storage } from "../utils/upload";
 
 @Controller('api')
 export class AuthenticationController {
-    constructor(private readonly authenticationService: AuthenticationService) { }
+    constructor(
+        private readonly authenticationService: AuthenticationService
+    ) { }
 
     @Post('c-update-profile-image')
-    async customerUpdateProfileImage(@CurrentUser() user: CurrentUserDto, @Req() req: any, @Res() res: Response) {
-        return await this.authenticationService.customerUpdateProfileImage(user, req, res);
+    @UseInterceptors(AnyFilesInterceptor(storage))
+    async customerUpdateProfileImage(@CurrentUser() user: CurrentUserDto, @UploadedFiles() files: any, @Res() res: Response) {
+        return await this.authenticationService.customerUpdateProfileImage(user, files, res);
     }
 
     @Post('c-update-profile')
-    async customerUpdateProfile(@CurrentUser() user: CurrentUserDto, @Req() req: Request, @Res() res: Response) {
-        return await this.authenticationService.customerUpdateProfile(user, req, res)
+    async customerUpdateProfile(@CurrentUser() user: CurrentUserDto, @Body() userBody: UpdateUserDto, @Res() res: Response) {
+        return await this.authenticationService.customerUpdateProfile(user, userBody, res)
     }
 
     @Post('add-family-member')
-    async addFamilyMember(@CurrentUser() user: CurrentUserDto, @Req() req: Request, @Res() res: Response) {
-        return await this.authenticationService.addFamilyMember(user, req, res);
+    @UseInterceptors(AnyFilesInterceptor(storage))
+    async addFamilyMember(@CurrentUser() user: CurrentUserDto, @UploadedFiles() files: any, @Body() familyMemberBody: CreateFamilyMemberDto, @Res() res: Response) {
+        return await this.authenticationService.addFamilyMember(user, files, familyMemberBody, res);
     }
 
     @Post('update-family-member-profile')
-    async updateFamilyMemberProfile(@CurrentUser() user: CurrentUserDto, @Req() req: Request, @Res() res: Response) {
-        return await this.authenticationService.updateFamilyMemberProfile(user, req, res)
+    @UseInterceptors(AnyFilesInterceptor(storage))
+    async updateFamilyMemberProfile(@CurrentUser() user: CurrentUserDto, @UploadedFiles() files: any, @Body() familyMemberBody: UpdateFamilyMemberDto, @Res() res: Response) {
+        return await this.authenticationService.updateFamilyMemberProfile(user, files, familyMemberBody, res)
     }
 
     @Get('list-all-profiles')
@@ -34,13 +42,13 @@ export class AuthenticationController {
     }
 
     @Post('delete-family-member-profile')
-    async deleteFamilyMemberProfile(@CurrentUser() user: CurrentUserDto, @Req() req: Request, @Res() res: Response) {
-        return await this.authenticationService.deleteFamilyMemberProfile(user, req, res);
+    async deleteFamilyMemberProfile(@CurrentUser() user: CurrentUserDto, @Body() familyMemberBody: CommonMemberDto, @Res() res: Response) {
+        return await this.authenticationService.deleteFamilyMemberProfile(user, familyMemberBody, res);
     }
 
     @Post('make-profile-default')
-    async makeProfileDefault(@CurrentUser() user: CurrentUserDto, @Req() req: Request, @Res() res: Response) {
-        return await this.authenticationService.makeProfileDefault(user, req, res);
+    async makeProfileDefault(@CurrentUser() user: CurrentUserDto, @Body() familyMemberBody: CommonMemberDto, @Res() res: Response) {
+        return await this.authenticationService.makeProfileDefault(user, familyMemberBody, res);
     }
 
     @Get('get-profile')
@@ -49,7 +57,7 @@ export class AuthenticationController {
     }
 
     @Post('booking-listing')
-    async bookingListing(@CurrentUser() user: CurrentUserDto, @Req() req: Request, @Res() res: Response) {
-        return await this.authenticationService.bookingListing(user, req, res);
+    async bookingListing(@CurrentUser() user: CurrentUserDto, @Req() filterBody: Request, @Res() res: Response) {
+        return await this.authenticationService.bookingListing(user, filterBody, res);
     }
 }
