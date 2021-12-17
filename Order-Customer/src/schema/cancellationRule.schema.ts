@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 
-@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },collection: 'Cancellation_rule' })
+@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },collection: 'cancellation_rule' })
 export class CancellationRule {
   
   @Prop({ type: String, enum: ['after', 'before'], required: true })
