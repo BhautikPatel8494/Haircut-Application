@@ -16,7 +16,7 @@ import { SendNotification } from './type';
 @Injectable()
 export class UtilityService {
   constructor(
-    @InjectModel('serviceProvider') private readonly serviceProvider: Model<ServiceProviders>,
+    @InjectModel('serviceProvider') private readonly serviceProviderModel: Model<ServiceProviders>,
     @InjectModel('order') private readonly orderModel: Model<Orders>,
     @InjectModel('user') private readonly userModel: Model<Users>,
     @InjectModel('config') private readonly configModel: Model<Configs>,
@@ -48,7 +48,7 @@ export class UtilityService {
         },
       };
     }
-    const user = await this.serviceProvider.aggregate([query,
+    const user = await this.serviceProviderModel.aggregate([query,
       {
         $lookup: {
           from: 'orders',

@@ -28,15 +28,15 @@ import { CurrentUserDto } from 'src/authentication/authentication.dto';
 @Injectable()
 export class BookingOrderService {
   constructor(
-    @InjectModel('serviceProvider') private readonly serviceProvider: Model<ServiceProviders>,
-    @InjectModel('cancellationRule') private readonly cancellationRule: Model<CancellationRule>,
-    @InjectModel('customerTransaction') private readonly customerTransaction: Model<CustomerTransactions>,
-    @InjectModel('notifications') private readonly notifications: Model<Notifications>,
-    @InjectModel('schedules') private readonly schedules: Model<Schedules>,
+    @InjectModel('serviceProvider') private readonly serviceProviderModel: Model<ServiceProviders>,
+    @InjectModel('cancellationRule') private readonly cancellationRuleModel: Model<CancellationRule>,
+    @InjectModel('customerTransaction') private readonly customerTransactionModel: Model<CustomerTransactions>,
+    @InjectModel('notifications') private readonly notificationsModel: Model<Notifications>,
+    @InjectModel('schedules') private readonly schedulesModel: Model<Schedules>,
     @InjectModel('order') private readonly orderModel: Model<Orders>,
     @InjectModel('user') private readonly userModel: Model<Users>,
-    @InjectModel('customerCarts') private readonly customerCarts: Model<CustomerCarts>,
-    @InjectModel('deviceNotification') private readonly deviceNotification: Model<DeviceNotification>,
+    @InjectModel('customerCarts') private readonly customerCartsModel: Model<CustomerCarts>,
+    @InjectModel('deviceNotification') private readonly deviceNotificationModel: Model<DeviceNotification>,
     private apiResponse: ApiResponse,
     private utilityService: UtilityService,
   ) { }
@@ -68,7 +68,7 @@ export class BookingOrderService {
   }
 
   async createTransaction(message: string, amount: number, user_id: string, transaction_type: string) {
-    let transaction = await this.customerTransaction.create({
+    let transaction = await this.customerTransactionModel.create({
       user_id,
       amount,
       message,
@@ -79,7 +79,7 @@ export class BookingOrderService {
   }
 
   async createPaymentTransaction(message: string, amount: number, user_id: string, transaction_type: string) {
-    let transaction = await this.customerTransaction.create({
+    let transaction = await this.customerTransactionModel.create({
       user_id,
       amount,
       message,
@@ -92,10 +92,10 @@ export class BookingOrderService {
   async checkStylistAvailabel(filterBody: FilterDto, res: Response) {
     try {
       const { stylist_id, date, start_time, end_time } = filterBody;
-      const stylistInfo = await this.serviceProvider.findOne({ _id: stylist_id }, { active_schedule_type: 1 });
+      const stylistInfo = await this.serviceProviderModel.findOne({ _id: stylist_id }, { active_schedule_type: 1 });
       if (stylistInfo) {
         const bookingInfo = await this.orderModel.find({ stylist_id: stylist_id, booking_status: { $in: [1, 2, 3, 5] } });
-        const scheduleInfo = await this.schedules.findOne({ stylist_id: stylist_id, schedule_type: stylistInfo.active_schedule_type });
+        const scheduleInfo = await this.schedulesModel.findOne({ stylist_id: stylist_id, schedule_type: stylistInfo.active_schedule_type });
         if (scheduleInfo && scheduleInfo.scheduled_days.length > 0) {
           const currentDate = moment(parseInt(date));
           let currentDay = currentDate.format('dddd');
@@ -156,7 +156,7 @@ export class BookingOrderService {
         lng: activeAdress.lng ? activeAdress.lng : '',
         location: activeAdress.live_location ? activeAdress.live_location : '',
       };
-      let cart = await this.customerCarts.findOne({ _id: cart_id, user_id: userAuth._id });
+      let cart = await this.customerCartsModel.findOne({ _id: cart_id, user_id: userAuth._id });
       if (!cart) {
         return this.apiResponse.ErrorResponseWithoutData(res, 'Record not found');
       }
@@ -301,9 +301,9 @@ export class BookingOrderService {
           await this.createPaymentTransaction(message, billToDeductFromCard, userAuth._id, transactionType);
           let notify = {};
           if (parseInt(booking_type) === 0) {
-            notify = await this.deviceNotification.findOne({ type: 'on_demand_booking' });
+            notify = await this.deviceNotificationModel.findOne({ type: 'on_demand_booking' });
           } else {
-            notify = await this.deviceNotification.findOne({ type: 'on_scheduled_booking' });
+            notify = await this.deviceNotificationModel.findOne({ type: 'on_scheduled_booking' });
           }
           let data = {
             lat: activeAdress.lat,
@@ -409,7 +409,7 @@ export class BookingOrderService {
       }
       let query = {};
       let notificationType = '';
-      let stylistInfo = await this.serviceProvider.findOne({ _id: stylist_id }, { firstname: 1 });
+      let stylistInfo = await this.serviceProviderModel.findOne({ _id: stylist_id }, { firstname: 1 });
       let date = new Date();
       if (parseInt(status) === 1) {
         query = {
@@ -463,12 +463,12 @@ export class BookingOrderService {
         notificationType = 'completed_order';
 
         let total_bill = user.bill_details.total_bill;
-        await this.serviceProvider.updateOne({ _id: stylist_id }, { $inc: { wallet: total_bill } });
+        await this.serviceProviderModel.updateOne({ _id: stylist_id }, { $inc: { wallet: total_bill } });
         if (user.addons_charge_id)
           await this.capturePayment(user.addons_charge_id);
       } else if (parseInt(status) === 5) {
         query = { $push: { order_rejected_by: stylist_id } };
-        await this.notifications.updateOne({ order_id: order_id, stylist_id: stylist_id }, { $set: { type: 'rejected' } });
+        await this.notificationsModel.updateOne({ order_id: order_id, stylist_id: stylist_id }, { $set: { type: 'rejected' } });
       } else {
         query = { booking_status: status };
       }
@@ -520,7 +520,7 @@ export class BookingOrderService {
         lng: activeAdress.lat ? activeAdress.lat : '',
         location: activeAdress.location ? activeAdress.location : '',
       };
-      let cart = await this.customerCarts.findOne({ _id: cart_id, user_id: userAuth._id });
+      let cart = await this.customerCartsModel.findOne({ _id: cart_id, user_id: userAuth._id });
       if (!cart) {
         return this.apiResponse.ErrorResponseWithoutData(res, 'Cart not exists for this user!');
       }
@@ -606,7 +606,7 @@ export class BookingOrderService {
       const booking = await this.orderModel.create(createdObj);
       let notify = {};
       if (booking._id) {
-        notify = await this.deviceNotification.findOne({ type: 'customer_booking' });
+        notify = await this.deviceNotificationModel.findOne({ type: 'customer_booking' });
       }
       let data = {
         lat: activeAdress.lat,
@@ -671,7 +671,7 @@ export class BookingOrderService {
         };
       }
 
-      const charges = await this.cancellationRule.findOne(query);
+      const charges = await this.cancellationRuleModel.findOne(query);
       if (!charges) {
         return this.apiResponse.successResponseWithData(res, 'No Cancellation charge', charges);
       }
@@ -798,7 +798,7 @@ export class BookingOrderService {
       } else {
         notificationType = { type: 'on_scheduled_booking' };
       }
-      const notificationInfo = await this.deviceNotification.findOne(notificationType);
+      const notificationInfo = await this.deviceNotificationModel.findOne(notificationType);
       let data = {
         lat: activeAdress.lat,
         lng: activeAdress.lng,
