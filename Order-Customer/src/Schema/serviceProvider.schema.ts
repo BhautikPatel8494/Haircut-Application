@@ -139,11 +139,11 @@ export class ServiceProviders {
   @Prop({ type: Array, default: [] })
   preferences: [];
 
-  @Prop({ type: Number, default: 0 })
-  lat: number;
-
-  @Prop({ type: Number, default: 0 })
-  lng: number;
+  @Prop({ type: Object })
+  register_location: {
+    type: string;
+    coordinates: [];
+  };
 
   @Prop({ type: Array, default: [] })
   blocked_customer: [type: string];
@@ -167,7 +167,7 @@ export class ServiceProviders {
   stylist_referral_code: string;
 
   @Prop({ type: Object })
-  location: {
+  live_location: {
     type: string;
     coordinates: [];
   };
@@ -223,4 +223,8 @@ export class ServiceProviders {
   active_schedule_type: string;
 }
 
-export const ServiceProviderSchema = SchemaFactory.createForClass(ServiceProviders);
+const UpdatedSchema = SchemaFactory.createForClass(ServiceProviders);
+UpdatedSchema.index({ live_location: '2dsphere' })
+UpdatedSchema.index({ register_location: '2dsphere' })
+
+export const ServiceProviderSchema = UpdatedSchema;

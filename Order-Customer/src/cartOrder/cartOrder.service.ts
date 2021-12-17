@@ -201,11 +201,8 @@ export class CartOrderService {
                       {
                         // ***********************REMAINING***************
                         $set: {
-                          // 'cart_profiles.$[outer].cart_items.$[inner].quantity':
-                          //   parseInt(quantity),
-                          // 'cart_profiles.$[outer].cart_items.$[inner].price':
-                          //   parseInt(sale_price) *
-                          //   parseInt(quantity),
+                          'cart_profiles.$[outer].cart_items.$[inner].quantity': quantity,
+                          'cart_profiles.$[outer].cart_items.$[inner].price': sale_price * quantity,
                         },
                       },
                       {

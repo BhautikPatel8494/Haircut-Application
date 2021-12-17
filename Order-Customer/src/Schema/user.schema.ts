@@ -3,7 +3,7 @@ import { Schema as MongooseSchema } from 'mongoose';
 
 @Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } })
 class FamilyMembers {
-  _id: string;
+  _id?: string;
 
   @Prop({ type: String, required: true })
   firstname: string;
@@ -12,10 +12,10 @@ class FamilyMembers {
   lastname: string;
 
   @Prop({ type: String, default: null })
-  profile: string;
+  profile: any;
 
-  @Prop({ type: Date, required: true })
-  dob: Date;
+  @Prop({ type: String, required: true })
+  dob: string;
 
   @Prop({
     type: String,
@@ -79,8 +79,11 @@ export class Addresses {
   @Prop({ type: Boolean, default: false })
   active: boolean;
 
-  @Prop({ type: String })
-  location: string;
+  @Prop({ type: Object })
+  location: {
+    type: string,
+    coordinates: []
+  };
 }
 
 const AddressSchema = SchemaFactory.createForClass(Addresses);
@@ -172,8 +175,8 @@ export class Users {
   @Prop({ type: String, enum: ['men', 'women', 'other'], required: true })
   gender: string;
 
-  @Prop({ type: Date })
-  dob: Date;
+  @Prop({ type: String })
+  dob: string;
 
   @Prop({ type: Object })
   register_location: {
@@ -189,7 +192,7 @@ export class Users {
 
   @Prop({
     type: String,
-    enum: ['men', 'women', 'kid', 'senior'],
+    enum: ['men', 'women', 'kids', 'senior'],
     required: true,
   })
   user_type: string;
