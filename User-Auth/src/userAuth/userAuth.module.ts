@@ -1,16 +1,19 @@
 import { Module } from "@nestjs/common";
-import { JwtModule, JwtService } from "@nestjs/jwt";
+import { JwtModule } from "@nestjs/jwt";
 import { MongooseModule } from "@nestjs/mongoose";
+import { PassportModule } from "@nestjs/passport";
+
 import { CountriesWithCodesSchema } from "src/schema/countriesWithCode.schema";
 import { ServiceProviderSchema } from "src/schema/serviceProvider.schema";
 import { ApiResponse } from "src/utils/apiResponse.service";
 import { UtilityService } from "src/utils/utlity.service";
 import { UsertAuthController } from "./userAuth.controller";
 import { UserAuthService } from "./userAuth.service";
-import { PassportModule } from "@nestjs/passport";
 import { TempOtpSchema } from "src/schema/tempOtp.schema";
 import { ConnectedAccountSchema } from "src/schema/connectedAccount.schema";
 import { UserSchema } from "src/schema/user.schema";
+import { AdminSchema } from "src/schema/admin.schema";
+import { SendMail } from "src/utils/sendMail.service";
 
 @Module({
     imports: [
@@ -26,9 +29,10 @@ import { UserSchema } from "src/schema/user.schema";
             { name: 'tempOtp', schema: TempOtpSchema },
             { name: 'connectedAccounts', schema: ConnectedAccountSchema },
             { name: 'user', schema: UserSchema },
+            { name: 'admin', schema: AdminSchema },
         ]),],
     controllers: [UsertAuthController],
-    providers: [UserAuthService, UtilityService, ApiResponse],
+    providers: [UserAuthService, UtilityService, ApiResponse, SendMail]
 })
 
 export class UserAuthModule { } 

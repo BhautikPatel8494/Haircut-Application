@@ -4,16 +4,18 @@ import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
 import * as bcrypt from 'bcrypt';
 import { Twilio } from 'twilio';
+import { Request, Response } from "express";
 
 import { CountriesWithCodes } from "src/schema/countriesWithCode.schema";
 import { ServiceProviders } from "src/schema/serviceProvider.schema";
 import { ApiResponse } from "src/utils/apiResponse.service";
 import { COSMETOLOGY_LICENSE_IMAGE, CUSTOMER_PROFILE, DRIVING_LICENSE_IMAGE, LIABILITY_IMAGE, RIZWAN_SIGNATURE_IMAGE, STYLIST_PROFILE } from "src/utils/constant";
 import { UtilityService } from "src/utils/utlity.service";
-import { Request, Response } from "express";
 import { TempOtps } from "src/schema/tempOtp.schema";
 import { ConnectedAccounts } from 'src/schema/connectedAccount.schema';
 import { Addresses, Users } from 'src/schema/user.schema';
+import { Admin } from 'src/schema/admin.schema';
+import { SendMail } from 'src/utils/sendMail.service';
 
 const excludePhoneNumberList = [
     "8896800983",
@@ -34,68 +36,75 @@ const excludePhoneNumberList = [
 @Injectable()
 export class UserAuthService {
     constructor(private readonly utilityService: UtilityService,
+        private sendMailService: SendMail,
         private readonly apiResponse: ApiResponse,
         @InjectModel('serviceProvider') private readonly serviceProviderModel: Model<ServiceProviders>,
         @InjectModel('connectedAccounts') private readonly connectedAccountsModel: Model<ConnectedAccounts>,
         @InjectModel('countriesWithCodes') private readonly countriesWithCodesModel: Model<CountriesWithCodes>,
         @InjectModel('user') private readonly userModel: Model<Users>,
+        @InjectModel('admin') private readonly adminModel: Model<Admin>,
         @InjectModel('tempOtp') private readonly tempOtpModel: Model<TempOtps>,
-        private jwtService: JwtService
+        private jwtService: JwtService,
     ) { }
 
     async stylistRegister(files, req: Request, res: Response) {
         try {
+
+            const { country_code, password, firstname, lastname, middlename, email, gender, dob, player_id, tags, phone_number, category, specialization,
+                experience, address, city, state, zip_code, ssn_number, cosmetology_license, driving_license, contractor, liability_waiver,
+                privacy_policy, terms_condition, lat, lng, device_type, device_token } = req.body;
+
             let customerCode = "INV" + this.utilityService.generateOTP()
             let stylistCode = "INV" + this.utilityService.generateOTP()
-            console.log(customerCode, stylistCode, req.body.country_code)
-            let country = await this.countriesWithCodesModel.findOne({ dial_code: req.body.country_code }, { code: 1 })
+            console.log(customerCode, stylistCode, country_code)
+            let country = await this.countriesWithCodesModel.findOne({ dial_code: country_code }, { code: 1 })
 
-            const hash = await bcrypt.hash(req.body.password, 10)
+            const hash = await bcrypt.hash(password, 10)
 
             var serviceProvider = new this.serviceProviderModel(
                 {
-                    firstname: req.body.firstname,
-                    lastname: req.body.lastname,
-                    middlename: (req.body.middlename) ? req.body.middlename : '',
-                    full_name: (req.body.middlename) ? req.body.firstname + " " + req.body.middlename + " " + req.body.lastname : req.body.firstname + " " + req.body.lastname,
-                    email: req.body.email,
+                    firstname: firstname,
+                    lastname: lastname,
+                    middlename: (middlename) ? middlename : '',
+                    full_name: (middlename) ? firstname + " " + middlename + " " + lastname : firstname + " " + lastname,
+                    email: email,
                     password: hash,
                     otp: this.utilityService.generateOTP(),
-                    gender: req.body.gender ? req.body.gender : '',
+                    gender: gender ? gender : '',
                     customer_referral_code: customerCode,
                     stylist_referral_code: stylistCode,
-                    dob: (req.body.dob) ? req.body.dob : '',
-                    player_id: req.body.player_id ? req.body.player_id : '',
-                    tags: req.body.tags ? req.body.tags : [],
-                    country_code: req.body.country_code,
-                    country: req.body.country ? req.body.country : country.code,
-                    phone_number: req.body.phone_number,
-                    category: req.body.category,
+                    dob: (dob) ? dob : '',
+                    player_id: player_id ? player_id : '',
+                    tags: tags ? tags : [],
+                    country_code: country_code,
+                    country: country ? country : country.code,
+                    phone_number: phone_number,
+                    category: category,
                     registration_status: "awaiting",
-                    specialization: req.body.specialization,
-                    experience: req.body.experience,
-                    address: (req.body.address) ? req.body.address : '',
-                    city: (req.body.city) ? req.body.city : '',
-                    state: (req.body.state) ? req.body.state : '',
-                    zip_code: (req.body.zip_code) ? req.body.zip_code : '',
-                    ssn_number: (req.body.ssn_number) ? req.body.ssn_number : '',
-                    cosmetology_license: (req.body.cosmetology_license) ? req.body.cosmetology_license : '',
-                    driving_license: (req.body.driving_license) ? req.body.driving_license : '',
-                    contractor: (req.body.contractor) ? req.body.contractor : 0,
-                    liability_waiver: (req.body.liability_waiver) ? req.body.liability_waiver : 0,
-                    privacy_policy: (req.body.privacy_policy) ? req.body.privacy_policy : 0,
-                    terms_condition: (req.body.terms_condition) ? req.body.terms_condition : 0,
+                    specialization: specialization,
+                    experience: experience,
+                    address: (address) ? address : '',
+                    city: (city) ? city : '',
+                    state: (state) ? state : '',
+                    zip_code: (zip_code) ? zip_code : '',
+                    ssn_number: (ssn_number) ? ssn_number : '',
+                    cosmetology_license: (cosmetology_license) ? cosmetology_license : '',
+                    driving_license: (driving_license) ? driving_license : '',
+                    contractor: (contractor) ? contractor : 0,
+                    liability_waiver: (liability_waiver) ? liability_waiver : 0,
+                    privacy_policy: (privacy_policy) ? privacy_policy : 0,
+                    terms_condition: (terms_condition) ? terms_condition : 0,
                     connect_id: '',
                     is_stylist_onboarding_complete: false,
-                    lat: req.body.lat,
-                    lng: req.body.lng,
+                    lat: lat,
+                    lng: lng,
                     location: {
                         type: "Point",
-                        coordinates: [parseFloat(req.body.lng), parseFloat(req.body.lat)]
+                        coordinates: [parseFloat(lng), parseFloat(lat)]
                     },
                     devices: [{
-                        type: req.body.device_type,
-                        token: (req.body.device_token) ? req.body.device_token : ''
+                        type: device_type,
+                        token: (device_token) ? device_token : ''
                     }]
 
                 }
@@ -104,73 +113,62 @@ export class UserAuthService {
             const success = await serviceProvider.save();
             if (success) {
                 if (files) {
-                    files.forEach(element => {
+                    files.forEach(async element => {
                         let bucket = '';
                         let fieldToUpdate = '';
                         if (element.fieldname == 'cosmetology_license_image') {
                             success.cosmetology_license_image = COSMETOLOGY_LICENSE_IMAGE + element.filename
                             bucket = 'instacuts/service_provider/cosmetology_licence';
-                            this.serviceProviderModel.updateOne({ _id: success._id },
+                            await this.serviceProviderModel.updateOne({ _id: success._id },
                                 {
                                     $set: {
                                         cosmetology_license_image: element.filename
                                     }
-                                }).then(updated => {
-                                    console.log('updated', updated);
-                                }).catch(update_err => { });
+                                })
                         } else if (element.fieldname == 'driving_license_image') {
                             success.driving_license_image = DRIVING_LICENSE_IMAGE + element.filename
                             bucket = 'instacuts/service_provider/driving_licence';
-                            this.serviceProviderModel.updateOne({ _id: success._id },
+                            await this.serviceProviderModel.updateOne({ _id: success._id },
                                 {
                                     $set: {
                                         driving_license_image: element.filename
                                     }
-                                }).then(updated => {
-                                    console.log('updated', updated);
-                                }).catch(update_err => { });
+                                })
                         } else if (element.fieldname == 'profile') {
 
                             success.profile = STYLIST_PROFILE + element.filename;
                             bucket = 'instacuts/service_provider/profile';
-                            this.serviceProviderModel.updateOne({ _id: success._id },
+                            await this.serviceProviderModel.updateOne({ _id: success._id },
                                 {
                                     $set: {
                                         profile: element.filename
                                     }
-                                }).then(updated => {
-                                    console.log('updated', updated);
-                                }).catch(update_err => { });
+                                })
 
                         } else if (element.fieldname == 'liability_waiver_image') {
                             success.liability_waiver_image = LIABILITY_IMAGE + element.filename
                             bucket = 'instacuts/service_provider/liability_waiver';
                             //success.element.fieldname = element.filename;
-                            this.serviceProviderModel.updateOne({ _id: success._id },
+                            await this.serviceProviderModel.updateOne({ _id: success._id },
                                 {
                                     $set: {
                                         liability_waiver_image: element.filename
                                     }
-                                }).then(updated => {
-                                    console.log('updated', updated);
-                                }).catch(update_err => { });
+                                })
                         }
 
-                        //upload documents to buckets
                         const uploaded: any = this.utilityService.uploadFile(element.destination, element.filename, element.mimetype, bucket)
                         let filename = uploaded.data.split('/');
-                        console.log('fieldToUpdate', fieldToUpdate);
-                        console.log('success._id', success._id);
                     });
                 }
             }
-
             const jwtPayload = JSON.parse(JSON.stringify(success));
             const jwtData = {
                 audience: process.env.JWT_AUDIENCE,
                 secret: process.env.JWT_SECRET
             };
             jwtPayload.authToken = this.jwtService.sign(jwtPayload, jwtData);
+            await this.serviceProviderModel.updateOne({ _id: success._id }, { access_token: jwtPayload.authToken })
             jwtPayload.signatureUrl = RIZWAN_SIGNATURE_IMAGE;
             return res.status(200).json({ status: 200, messgae: "Registration Success.", data: jwtPayload });
         } catch (err) {
@@ -181,19 +179,21 @@ export class UserAuthService {
 
     async stylistLogin(req: Request, res: Response) {
         try {
-            const user = await this.serviceProviderModel.findOne({ phone_number: req.body.phone_number, country_code: req.body.country_code })
+
+            const { phone_number, country_code, hash } = req.body;
+
+            const user = await this.serviceProviderModel.findOne({ phone_number: phone_number, country_code: country_code })
             if (user) {
-                let otp = excludePhoneNumberList.includes(req.body.phone_number) ? "123456" : this.utilityService.generateOTP()
-                this.tempOtpModel.create({ phone_number: req.body.phone_number, otp: otp });
-                await this.serviceProviderModel.updateOne({ phone_number: req.body.phone_number, country_code: req.body.country_code }, { $set: { otp: otp } })
-                if (excludePhoneNumberList.includes(req.body.phone_number)) {
+                let otp = excludePhoneNumberList.includes(phone_number) ? "123456" : this.utilityService.generateOTP()
+                this.tempOtpModel.create({ phone_number: phone_number, otp: otp });
+                await this.serviceProviderModel.updateOne({ phone_number: phone_number, country_code: country_code }, { $set: { otp: otp } })
+                if (excludePhoneNumberList.includes(phone_number)) {
                     return this.apiResponse.successResponseWithNoData(res, "OTP Sent.");
                 } else {
-                    let otpMessage = `Your Instacuts verification code is: ${otp}. Don't share this code with anyone.our employees will never ask for the code.${req.body.hash ? req.body.hash : ''}`
+                    let otpMessage = `Your Instacuts verification code is: ${otp}. Don't share this code with anyone.our employees will never ask for the code.${hash ? hash : ''}`
                     const client = new Twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-                    const message = client.messages.create({ body: otpMessage, from: process.env.TWILIO_SENDER_ID, to: `${req.body.country_code}${req.body.phone_number}` })
+                    const message = client.messages.create({ body: otpMessage, from: process.env.TWILIO_SENDER_ID, to: `${country_code}${phone_number}` })
                     if (message) {
-                        console.log(message);
                         return this.apiResponse.successResponseWithNoData(res, "OTP Sent.");
                     } else {
                         return this.apiResponse.ErrorResponseWithoutData(res, 'Something went wrong.');
@@ -207,34 +207,35 @@ export class UserAuthService {
         }
     }
 
-    async stylistVerifyOTPConfirm(req, res) {
+    async stylistVerifyOTPConfirm(req: Request, res: Response) {
+        const { phone_number, country_code, device_token, device_type, player_id, tags } = req.body;
         try {
             let token = {
-                type: req.body.device_type,
-                token: (req.body.device_token) ? req.body.device_token : ''
+                type: device_type,
+                token: (device_token) ? device_token : ''
             }
-            const user = await this.serviceProviderModel.findOne({ phone_number: req.body.phone_number, country_code: req.body.country_code })
+            const user = await this.serviceProviderModel.findOne({ phone_number: phone_number, country_code: country_code })
             let updateParams;
             if (user && user.disable === 2 && user.is_first_login) {
                 updateParams = { otp: null, is_first_login: 0, devices: [token] }
             } else {
                 updateParams = {
-                    otp: null, devices: [token], player_id: req.body.player_id ? req.body.player_id : '',
-                    tags: req.body.tags ? req.body.tags : [],
+                    otp: null, devices: [token], player_id: player_id ? player_id : '',
+                    tags: tags ? tags : [],
                 }
             }
             let nullToken = {
-                type: req.body.device_type,
+                type: device_type,
                 token: ''
             }
-            await this.serviceProviderModel.updateMany({ "devices.token": req.body.device_token }, { $set: nullToken })
-            await this.serviceProviderModel.updateOne({ phone_number: req.body.phone_number, country_code: req.body.country_code }, { $set: updateParams })
+            await this.serviceProviderModel.updateMany({ "devices.token": device_token }, { $set: nullToken })
+            await this.serviceProviderModel.updateOne({ phone_number: phone_number, country_code: country_code }, { $set: updateParams })
             if (user) {
-                let otp = await this.tempOtpModel.findOne({ phone_number: req.body.phone_number, otp: req.body.token });
+                let otp = await this.tempOtpModel.findOne({ phone_number: phone_number, otp: token });
                 if (!otp) {
                     return this.apiResponse.ErrorResponse(res, 'Not a valid token.', {});
                 }
-                this.tempOtpModel.deleteMany({ phone_number: req.body.phone_number })
+                this.tempOtpModel.deleteMany({ phone_number: phone_number })
 
                 let account = await this.connectedAccountsModel.findOne({ stylist_id: user._id }, { stripe_data: 1 })
                 let stripeConnectId = '';
@@ -298,11 +299,11 @@ export class UserAuthService {
                 userData.token = this.jwtService.sign(jwtPayload, jwtData);
                 return this.apiResponse.successResponseWithData(res, "Verified successfully.", userData);
             } else {
-                const userOtp = await this.tempOtpModel.findOne({ phone_number: req.body.phone_number, otp: req.body.token }).sort({ _id: -1 })
+                const userOtp = await this.tempOtpModel.findOne({ phone_number: phone_number, otp: token }).sort({ _id: -1 })
                 if (!userOtp) {
                     return this.apiResponse.ErrorResponse(res, 'Not a valid token.', {});
                 }
-                await this.tempOtpModel.deleteMany({ phone_number: req.body.phone_number })
+                await this.tempOtpModel.deleteMany({ phone_number: phone_number })
                 return this.apiResponse.successResponseWithData(res, "Verified successfully.", {});
             }
         } catch (err) {
@@ -310,10 +311,11 @@ export class UserAuthService {
         }
     }
 
-    async stylistCheckPhoneNumber(req, res) {
+    async stylistCheckPhoneNumber(req: Request, res: Response) {
         try {
-            if (req.body.type == 'email') {
-                const findStylistEmail = await this.serviceProviderModel.find({ email: req.body.email })
+            const { type, email, phone_number, country_code, hash } = req.body;
+            if (type == 'email') {
+                const findStylistEmail = await this.serviceProviderModel.find({ email: email })
                 if (findStylistEmail) {
                     return this.apiResponse.ErrorResponseWithoutData(res, 'Email already in use.');
                 } else {
@@ -321,19 +323,19 @@ export class UserAuthService {
                 }
             }
             else {
-                const findServicceProviderInfo = await this.serviceProviderModel.find({ phone_number: req.body.phone_number, country_code: req.body.country_code });
+                const findServicceProviderInfo = await this.serviceProviderModel.find({ phone_number: phone_number, country_code: country_code });
                 if (findServicceProviderInfo.length) {
                     return this.apiResponse.ErrorResponseWithoutData(res, 'Phone Number already in use.');
                 } else {
-                    let otp = excludePhoneNumberList.includes(req.body.phone_number) ? "123456" : this.utilityService.generateOTP()
-                    this.tempOtpModel.create({ phone_number: req.body.phone_number, country_code: req.body.country_code, otp: otp })
-                    if (excludePhoneNumberList.includes(req.body.phone_number)) {
+                    let otp = excludePhoneNumberList.includes(phone_number) ? "123456" : this.utilityService.generateOTP()
+                    this.tempOtpModel.create({ phone_number: phone_number, country_code: country_code, otp: otp })
+                    if (excludePhoneNumberList.includes(phone_number)) {
                         return this.apiResponse.successResponseWithNoData(res, "OTP Sent.");
                     } else {
-                        let otpMessage = `Your Instacutes verification code is: ${otp}. Don't share this code with anyone.our employees will never ask for the code.${req.body.hash ? req.body.hash : ''}`
-                        if (!excludePhoneNumberList.includes(req.body.phone_number)) {
+                        let otpMessage = `Your Instacutes verification code is: ${otp}. Don't share this code with anyone.our employees will never ask for the code.${hash ? hash : ''}`
+                        if (!excludePhoneNumberList.includes(phone_number)) {
                             const client = new Twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-                            const messageTwilio = client.messages.create({ body: otpMessage, from: process.env.TWILIO_SENDER_ID, to: `${req.body.country_code}${req.body.phone_number}` })
+                            const messageTwilio = client.messages.create({ body: otpMessage, from: process.env.TWILIO_SENDER_ID, to: `${country_code}${phone_number}` })
                             if (messageTwilio) {
                                 return this.apiResponse.successResponseWithNoData(res, "OTP Sent.");
                             } else {
@@ -351,8 +353,9 @@ export class UserAuthService {
     }
 
     async checkStylistStatus(req: Request, res: Response) {
+        const { stylist_id } = req.body;
         try {
-            let provider = await this.serviceProviderModel.findOne({ _id: req.body.stylist_id })
+            let provider = await this.serviceProviderModel.findOne({ _id: stylist_id })
             if (!provider) {
                 return this.apiResponse.ErrorResponse(res, 'Stylist not found!', {});
             }
@@ -369,22 +372,23 @@ export class UserAuthService {
 
     async customerRegister(files, req: Request, res: Response) {
         try {
-            const hash = await bcrypt.hash(req.body.password, 10)
+            const { password, firstname, lastname, email, lat, lng, gender, dob, country_code, phone_number, device_type, device_token } = req.body;
+            const hash = await bcrypt.hash(password, 10)
             const createObj = {
-                firstname: req.body.firstname,
-                lastname: req.body.lastname,
-                email: req.body.email,
+                firstname: firstname,
+                lastname: lastname,
+                email: email,
                 password: hash,
-                lat: req.body.lat,
-                lng: req.body.lng,
-                gender: req.body.gender ? req.body.gender : '',
-                dob: req.body.dob ? req.body.dob : '',
-                country_code: req.body.country_code,
-                phone_number: req.body.phone_number,
-                user_type: req.body.gender && req.body.dob ? this.utilityService.getUserType(this.utilityService.calculateAge(req.body.dob), req.body.gender) : '',
+                lat: lat,
+                lng: lng,
+                gender: gender ? gender : '',
+                dob: dob ? dob : '',
+                country_code: country_code,
+                phone_number: phone_number,
+                user_type: gender && dob ? this.utilityService.getUserType(this.utilityService.calculateAge(dob), gender) : '',
                 devices: [{
-                    type: req.body.device_type,
-                    token: (req.body.device_token) ? req.body.device_token : ''
+                    type: device_type,
+                    token: (device_token) ? device_token : ''
                 }]
             }
             const userCreateInfo = await this.userModel.create(createObj);
@@ -415,60 +419,62 @@ export class UserAuthService {
         }
     }
 
-    async customerLogin(req, res) {
+    async customerLogin(req: Request, res: Response) {
         try {
-            this.userModel.findOne({ phone_number: req.body.phone_number, country_code: req.body.country_code }).then(async user => {
-                if (user) {
 
-                    let otp = excludePhoneNumberList.includes(req.body.phone_number) ? "123456" : this.utilityService.generateOTP()
-                    await this.userModel.updateOne({ phone_number: req.body.phone_number, country_code: req.body.country_code }, { $set: { otp: otp } })
-                    if (excludePhoneNumberList.includes(req.body.phone_number)) {
+            const { country_code, phone_number, hash } = req.body;
+
+            const user = await this.userModel.findOne({ phone_number: phone_number, country_code: country_code })
+            if (user) {
+                let otp = excludePhoneNumberList.includes(phone_number) ? "123456" : this.utilityService.generateOTP()
+                await this.userModel.updateOne({ phone_number: phone_number, country_code: country_code }, { $set: { otp: otp } })
+                if (excludePhoneNumberList.includes(phone_number)) {
+                    return this.apiResponse.successResponseWithCustomKeyName(res, "OTP Sent.", 1);
+                } else {
+                    let otpMessage = `Your Instacuts verification code is: ${otp}. Don't share this code with anyone.our employees will never ask for the code.${hash ? hash : ''}`
+                    const client = new Twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+                    const messageTwillo = await client.messages.create({ body: otpMessage, from: process.env.TWILIO_SENDER_ID, to: `${country_code}${phone_number}` })
+                    if (messageTwillo) {
                         return this.apiResponse.successResponseWithCustomKeyName(res, "OTP Sent.", 1);
                     } else {
-                        let otpMessage = `Your Instacuts verification code is: ${otp}. Don't share this code with anyone.our employees will never ask for the code.${req.body.hash ? req.body.hash : ''}`
-                        const client = new Twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-                        const messageTwillo = await client.messages.create({ body: otpMessage, from: process.env.TWILIO_SENDER_ID, to: `${req.body.country_code}${req.body.phone_number}` })
-                        if (messageTwillo) {
-                            return this.apiResponse.successResponseWithCustomKeyName(res, "OTP Sent.", 1);
-                        } else {
-                            return this.apiResponse.successResponseWithCustomKeyName(res, "OTP Sent.", 1);
-                        };
-                    }
+                        return this.apiResponse.successResponseWithCustomKeyName(res, "OTP Sent.", 1);
+                    };
+                }
+            } else {
+                let otp = excludePhoneNumberList.includes(phone_number) ? "123456" : this.utilityService.generateOTP()
+                await this.tempOtpModel.create({ phone_number: phone_number, otp: otp })
+                await this.userModel.updateOne({ phone_number: phone_number, country_code: country_code }, { $set: { otp: otp } })
+                if (excludePhoneNumberList.includes(phone_number)) {
+                    return this.apiResponse.successResponseWithCustomKeyName(res, "OTP Sent.", 0);
                 } else {
-                    let otp = excludePhoneNumberList.includes(req.body.phone_number) ? "123456" : this.utilityService.generateOTP()
-                    await this.tempOtpModel.create({ phone_number: req.body.phone_number, otp: otp })
-                    await this.userModel.updateOne({ phone_number: req.body.phone_number, country_code: req.body.country_code }, { $set: { otp: otp } })
-                    if (excludePhoneNumberList.includes(req.body.phone_number)) {
+                    let otpMessage = `Your Instacuts verification code is: ${otp}. Don't share this code with anyone.our employees will never ask for the code.${hash ? hash : ''}`
+                    const client = new Twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+                    const messageTwillo = await client.messages.create({ body: otpMessage, from: process.env.TWILIO_SENDER_ID, to: `${country_code}${phone_number}` })
+                    if (messageTwillo) {
                         return this.apiResponse.successResponseWithCustomKeyName(res, "OTP Sent.", 0);
                     } else {
-                        let otpMessage = `Your Instacuts verification code is: ${otp}. Don't share this code with anyone.our employees will never ask for the code.${req.body.hash ? req.body.hash : ''}`
-                        const client = new Twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-                        const messageTwillo = await client.messages.create({ body: otpMessage, from: process.env.TWILIO_SENDER_ID, to: `${req.body.country_code}${req.body.phone_number}` })
-                        if (messageTwillo) {
-                            return this.apiResponse.successResponseWithCustomKeyName(res, "OTP Sent.", 0);
-                        } else {
-                            return this.apiResponse.successResponseWithCustomKeyName(res, "OTP Sent.", 0);
-                        }
+                        return this.apiResponse.successResponseWithCustomKeyName(res, "OTP Sent.", 0);
                     }
                 }
-            });
+            }
         } catch (err) {
             return this.apiResponse.ErrorResponse(res, err.message, {});
         }
     }
 
     async customerVerifyOTPConfirm(req: Request, res: Response) {
+        const { phone_number, country_code, token, player_id, tags, device_type, device_token } = req.body;
         try {
-            const user = await this.userModel.findOne({ phone_number: req.body.phone_number, country_code: req.body.country_code, otp: req.body.token })
+            const user = await this.userModel.findOne({ phone_number: phone_number, country_code: country_code, otp: token })
             if (user) {
                 let body = {
                     otp: null,
-                    player_id: req.body.player_id ? req.body.player_id : '',
-                    tags: req.body.tags ? req.body.tags : [],
+                    player_id: player_id ? player_id : '',
+                    tags: tags ? tags : [],
                 }
-                await this.userModel.updateOne({ phone_number: req.body.phone_number, country_code: req.body.country_code }, { $set: body })
-                if (req.body.device_type && req.body.device_token) {
-                    this.userModel.find({ "devices": { $elemMatch: { token: req.body.device_token, type: req.body.device_type } } }, function (user_err, user_result) {
+                await this.userModel.updateOne({ phone_number: phone_number, country_code: country_code }, { $set: body })
+                if (device_type && device_token) {
+                    this.userModel.find({ "devices": { $elemMatch: { token: device_token, type: device_type } } }, function (user_err, user_result) {
                         console.log('user_result', user_result);
                     });
                 }
@@ -520,11 +526,11 @@ export class UserAuthService {
                 return this.apiResponse.successResponseWithData(res, "Verified successfully.", userData);
             } else {
                 let userData = {};
-                const userOtp = await this.tempOtpModel.findOne({ phone_number: req.body.phone_number, otp: req.body.token })
+                const userOtp = await this.tempOtpModel.findOne({ phone_number: phone_number, otp: token })
                 if (!userOtp) {
                     return this.apiResponse.ErrorResponseWithoutData(res, "Invalid otp.")
                 }
-                await this.tempOtpModel.deleteMany({ phone_number: req.body.phone_number })
+                await this.tempOtpModel.deleteMany({ phone_number: phone_number })
                 return this.apiResponse.successResponseWithData(res, "Verified successfully.", {});
             }
         } catch (err) {
@@ -532,14 +538,15 @@ export class UserAuthService {
         }
     }
 
-    async customerLoginWithPassword(req, res) {
+    async customerLoginWithPassword(req: Request, res: Response) {
+        const { phone_number, country_code, device_type, device_token, password } = req.body;
         try {
-            const user = await this.userModel.findOne({ phone_number: req.body.phone_number, country_code: req.body.country_code })
+            const user = await this.userModel.findOne({ phone_number: phone_number, country_code: country_code })
             if (user) {
-                let password = bcrypt.compareSync(req.body.password, user.password);
-                if (password) {
-                    if (req.body.device_type && req.body.device_token) {
-                        this.userModel.find({ "devices": { $elemMatch: { token: req.body.device_token, type: req.body.device_type } } }, function (user_err, user_result) {
+                let passwordCompare = bcrypt.compareSync(password, user.password);
+                if (passwordCompare) {
+                    if (device_type && device_token) {
+                        this.userModel.find({ "devices": { $elemMatch: { token: device_token, type: device_type } } }, function (user_err, user_result) {
                             console.log('user_result', user_result);
                         });
                     }
@@ -596,6 +603,249 @@ export class UserAuthService {
             }
         } catch (e) {
             return this.apiResponse.ErrorResponse(res, e.message, {});
+        }
+    }
+
+    async adminRegister(req: Request, res: Response) {
+        const { password, name, email, mobile_no, } = req.body;
+        try {
+            const hash = await bcrypt.hash(password, 10)
+            // const authyRes = await authy.register_user(email, mobile_no, country_code)
+            var admin = new this.adminModel(
+                {
+                    name: name,
+                    email: email,
+                    password: hash,
+                    confirmOTP: '',
+                    profile: '',
+                    mobile_no: mobile_no,
+                    authy_id: "10123"
+                }
+            );
+            const user = await admin.save()
+            let userData = {
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                mobile_no: user.mobile_no,
+                authy_id: user.authy_id
+            };
+            return this.apiResponse.successResponseWithData(res, "Registration Success.", userData);
+        } catch (err) {
+            return this.apiResponse.ErrorResponse(res, err, {});
+        }
+    }
+
+    async adminLogin(req: Request, res: Response) {
+        const { email, password } = req.body;
+        try {
+            const user = await this.adminModel.findOne({ email: email });
+            if (user) {
+                const same = await bcrypt.compare(password, user.password)
+                if (same) {
+                    let userData = {
+                        _id: user._id,
+                        name: user.name,
+                        email: user.email,
+                        authy_id: user.authy_id,
+                        token: null
+                    };
+                    const jwtPayload = userData;
+                    const jwtData = {
+                        audience: process.env.JWT_AUDIENCE,
+                        secret: process.env.JWT_SECRET
+                    };
+                    userData.token = this.jwtService.sign(jwtPayload, jwtData);
+                    return this.apiResponse.successResponseWithData(res, "Login Success.", userData);
+                } else {
+                    return this.apiResponse.ErrorResponse(res, "Email or Password wrong.", {});
+                }
+            } else {
+                return this.apiResponse.ErrorResponse(res, "Email or Password wrong.", {});
+            }
+        } catch (err) {
+            return this.apiResponse.ErrorResponse(res, err, {});
+        }
+    }
+
+    async adminVerify(req: Request, res: Response) {
+        try {
+            const { authy_id, token } = req.body;
+
+            // authy.verify(authy_id, token = token, function (err, result) {
+            // if (result) {
+            const user = await this.adminModel.findOne({ authy_id: authy_id })
+            let userData = {
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                token: null,
+            };
+            const jwtPayload = userData;
+            const jwtData = {
+                expiresIn: process.env.JWT_TIMEOUT_DURATION,
+                secret: process.env.JWT_SECRET
+            };
+            userData.token = this.jwtService.sign(jwtPayload, jwtData);
+            return this.apiResponse.successResponseWithData(res, "Login Success.", userData);
+            // }
+            // });
+        } catch (err) {
+            return this.apiResponse.ErrorResponse(res, err, {});
+        }
+    }
+
+    async adminSendResetPasswordLink(req: Request, res: Response) {
+        const { email } = req.body;
+        try {
+            let query = { email: email };
+            const user = await this.adminModel.findOne(query)
+            if (user) {
+                let html = "Please find your password reset link below.< a href='http://54.173.42.159:4200/reset-password'>Click here</a>";
+                const success = await this.sendMailService.sendMail(
+                    process.env.FROM_EMAIL,
+                    email,
+                    "Please find your password reset link.",
+                    html
+                )
+                console.log(`success`, success)
+                if (success) {
+                    return this.apiResponse.successResponse(res, "Mail sent successfully.");
+                } else {
+                    return this.apiResponse.ErrorResponse(res, "Mail not sent successfully.", {});
+                }
+            }
+        } catch (err) {
+            console.log(`err`, err)
+            return this.apiResponse.ErrorResponse(res, err, {});
+        }
+    }
+
+    async adminResetPassword(req: Request, res: Response) {
+        try {
+            const { password, email } = req.body;
+            const hash = await bcrypt.hash(password, 10)
+            const admin = await this.adminModel.findOne({ email: email })
+            await this.adminModel.updateOne({ email: email }, {
+                $set: {
+                    password: hash
+                }
+            })
+            let userData = {
+                _id: admin._id,
+                name: admin.name,
+                email: admin.email,
+                mobile_no: admin.mobile_no,
+                authy_id: admin.authy_id
+            };
+            return this.apiResponse.successResponseWithData(res, "Password reset successfully.", userData);
+        } catch (err) {
+            return this.apiResponse.ErrorResponse(res, err, {});
+        }
+    }
+
+    async enableDisableAdmin(req: Request, res: Response) {
+        try {
+            const { admin_id, status } = req.body;
+            const updateAdmin = await this.adminModel.updateMany({ _id: { $in: admin_id } }, { $set: { status: status } }, { multi: true })
+            if (updateAdmin) {
+                return this.apiResponse.successResponseWithNoData(res, 'Record updated!');
+            }
+        } catch (e) {
+            return this.apiResponse.ErrorResponse(res, e.message, {});
+        }
+    }
+
+    async enableDisableStylist(req: Request, res: Response) {
+        try {
+            const { stylist_id, status } = req.body;
+            const updateStylist = await this.serviceProviderModel.updateMany({ _id: { $in: stylist_id } }, { $set: { status: status } }, { multi: true })
+            if (updateStylist) {
+                return this.apiResponse.successResponseWithNoData(res, 'Record updated!');
+            }
+        } catch (e) {
+            return this.apiResponse.ErrorResponse(res, e.message, {});
+        }
+    }
+
+    async enableDisableCustomer(req: Request, res: Response) {
+        try {
+            const { customer_id, status } = req.body;
+            const updateCustomer = await this.userModel.updateMany({ _id: { $in: customer_id } }, { $set: { status: status } }, { multi: true })
+            if (updateCustomer) {
+                return this.apiResponse.successResponseWithNoData(res, 'Record updated!');
+            }
+        } catch (e) {
+            return this.apiResponse.ErrorResponse(res, e.message, {});
+        }
+    }
+
+    async checkUserStatus(req: Request, res: Response) {
+        try {
+            let { user_type, email, phone_number, country_code } = req.body;
+            if (!user_type) {
+                return this.apiResponse.ErrorResponseWithoutData(res, 'Please enter user type!');
+            }
+            user_type = parseInt(user_type);
+            if (user_type === 1) { // Admin
+                if (!email) {
+                    return this.apiResponse.ErrorResponseWithoutData(res, 'Please enter email!');
+                }
+                const admin = await this.adminModel.findOne({ email: email })
+                if (!admin) {
+                    return this.apiResponse.notFoundResponseWithNoData(res, 'Record not found with this email');
+                }
+                if (admin.status) {
+                    return this.apiResponse.successResponseWithNoData(res, 'User is in active state');
+                } else {
+                    return this.apiResponse.ErrorResponseWithoutData(res, 'User is inactive');
+                }
+            }
+
+            else if (user_type === 2) { // Stylist
+                if (!phone_number) {
+                    return this.apiResponse.ErrorResponseWithoutData(res, 'Please enter phone number!');
+                }
+                if (!country_code) {
+                    return this.apiResponse.ErrorResponseWithoutData(res, 'Please enter country code!');
+                }
+                const stylist = await this.serviceProviderModel.findOne({
+                    phone_number: phone_number,
+                    country_code: country_code,
+                    registration_status: 'accepted',
+                    deleted: false,
+                }, { _id: 1, status: 1 })
+                if (!stylist) {
+                    return this.apiResponse.notFoundResponseWithNoData(res, 'Record not found');
+                }
+                if (stylist.status) {
+                    return this.apiResponse.successResponseWithNoData(res, 'User is in active state');
+                } else {
+                    return this.apiResponse.ErrorResponseWithoutData(res, 'User is inactive');
+                }
+            }
+
+            else if (user_type === 3) { // Customer
+                if (!phone_number) {
+                    return this.apiResponse.ErrorResponseWithoutData(res, 'Please enter phone number!');
+                }
+                if (!country_code) {
+                    return this.apiResponse.ErrorResponseWithoutData(res, 'Please enter country code!');
+                }
+                const customer = await this.userModel.findOne({ phone_number: phone_number, country_code: country_code })
+                if (!customer) {
+                    return this.apiResponse.notFoundResponseWithNoData(res, 'Record not found');
+                }
+                if (customer.status) {
+                    return this.apiResponse.successResponseWithNoData(res, 'User is in active state');
+                } else {
+                    return this.apiResponse.ErrorResponseWithoutData(res, 'User is inactive');
+                }
+            } else {
+                return this.apiResponse.ErrorResponseWithoutData(res, 'Bad status type.');
+            }
+        } catch (e) {
+            return this.apiResponse.ErrorResponse(res, e, {});
         }
     }
 }

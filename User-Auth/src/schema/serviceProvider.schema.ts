@@ -222,6 +222,9 @@ export class ServiceProviders {
   @Prop({ type: Array, default: [] })
   portfolio_videos: [];
 
+  @Prop({ type: String, default: null})
+  access_token: string;
+
   @Prop({ type: String, default: 'basic' })
   active_schedule_type: string;
 }
