@@ -225,6 +225,9 @@ export class ServiceProviders {
   @Prop({ type: String, default: null })
   access_token: string;
 
+  @Prop({ type: Number, default:null})
+  disable: number;
+
   created_at: string;
   updated_at: string;
 }
@@ -233,4 +236,4 @@ const UpdatedSchema = SchemaFactory.createForClass(ServiceProviders);
 UpdatedSchema.index({ live_location: '2dsphere' })
 UpdatedSchema.index({ register_location: '2dsphere' })
 
-export const ServiceProviderSchema = UpdatedSchema
+export const ServiceProviderSchema = UpdatedSchema;

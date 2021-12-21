@@ -1,21 +1,21 @@
 import { Schema, SchemaFactory, Prop } from '@nestjs/mongoose';
-import { Schema as MongooseSchema } from 'mongoose';
+import { Types } from 'mongoose';
 
 @Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }, collection: 'ratings' })
 export class Ratings {
-    @Prop({ type: MongooseSchema.Types.ObjectId, required: true })
+    @Prop({ type: Types.ObjectId, required: true })
     user_id: string;
 
-    @Prop({ type: MongooseSchema.Types.ObjectId })
+    @Prop({ type: Types.ObjectId })
     stylist_id: string;
 
-    @Prop({ type: MongooseSchema.Types.ObjectId })
+    @Prop({ type: Types.ObjectId })
     custom_service_id: string;
 
     @Prop({ type: String, enum: ['On-Demand', 'Regular'] })
     order_type: string;
 
-    @Prop({ type: MongooseSchema.Types.ObjectId })
+    @Prop({ type: Types.ObjectId })
     service_id: string;
 
     @Prop({ type: Number, default: 0 })

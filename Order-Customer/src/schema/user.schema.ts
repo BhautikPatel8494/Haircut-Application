@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Schema as MongooseSchema } from 'mongoose';
+import { Types } from 'mongoose';
 
 @Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } })
 class FamilyMembers {
@@ -84,7 +84,7 @@ const AddressSchema = SchemaFactory.createForClass(Addresses);
 
 @Schema()
 class BlockStylists {
-  @Prop({ type: MongooseSchema.Types.ObjectId })
+  @Prop({ type: Types.ObjectId })
   stylist_id: string;
 
   @Prop({ type: String })
