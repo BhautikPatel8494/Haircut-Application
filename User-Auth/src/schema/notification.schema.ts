@@ -1,17 +1,17 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Schema as MongooseSchema } from 'mongoose';
+import { Types } from 'mongoose';
 
 @Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }, collection: 'notifications' })
 export class Notifications {
-  @Prop()
+  @Prop({ type: Object })
   user: {
-    user_id: { type: MongooseSchema.Types.ObjectId };
-    full_name: { type: String };
-    profile: { type: String };
+    user_id: { type: string };
+    full_name: { type: string };
+    profile: { type: string };
   };
 
-  @Prop({ type: MongooseSchema.Types.ObjectId, required: true })
-  stylist_id: MongooseSchema.Types.ObjectId;
+  @Prop({ type: Types.ObjectId, required: true })
+  stylist_id: string;
 
   @Prop({ type: String, default: '' })
   message: string;
@@ -19,8 +19,8 @@ export class Notifications {
   @Prop({ type: Boolean, default: false })
   is_service_request: boolean;
 
-  @Prop({ type: MongooseSchema.Types.ObjectId })
-  order_id: MongooseSchema.Types.ObjectId;
+  @Prop({ type: Types.ObjectId })
+  order_id: string;
 
   @Prop({ type: Boolean, default: false })
   seen: boolean;

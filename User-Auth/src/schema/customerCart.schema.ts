@@ -1,10 +1,12 @@
 import { Schema, SchemaFactory, Prop } from '@nestjs/mongoose';
-import { Schema as MongooseSchema } from 'mongoose';
+import { Types } from 'mongoose';
 
 @Schema()
 export class CartItems {
-  @Prop({ type: MongooseSchema.Types.ObjectId, required: true })
-  service_id: MongooseSchema.Types.ObjectId;
+  _id?: string;
+
+  @Prop({ type: Types.ObjectId, required: true })
+  service_id: string;
 
   @Prop({ type: String, required: true })
   title: string;
@@ -38,8 +40,8 @@ export class CartProfiles {
   @Prop({ type: String })
   profile: string;
 
-  @Prop({ type: MongooseSchema.Types.ObjectId, required: true })
-  profile_id: MongooseSchema.Types.ObjectId;
+  @Prop({ type: Types.ObjectId, required: true })
+  profile_id: Types.ObjectId;
 
   @Prop({ type: String, required: true })
   user_type: string;
@@ -81,17 +83,17 @@ const BillDetailSchema = SchemaFactory.createForClass(BillDetails);
 
 @Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }, collection: 'customer_carts' })
 export class CustomerCarts {
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'users', required: true })
-  user_id: MongooseSchema.Types.ObjectId;
+  @Prop({ type: Types.ObjectId, ref: 'users', required: true })
+  user_id: string;
 
-  @Prop({ type: MongooseSchema.Types.ObjectId })
-  stylist_id: MongooseSchema.Types.ObjectId;
+  @Prop({ type: Types.ObjectId })
+  stylist_id: Types.ObjectId;
 
-  @Prop({ type: MongooseSchema.Types.ObjectId })
-  location_id: MongooseSchema.Types.ObjectId;
+  @Prop({ type: Types.ObjectId })
+  location_id: string;
 
-  @Prop({ type: MongooseSchema.Types.ObjectId })
-  service_category_id: MongooseSchema.Types.ObjectId;
+  @Prop({ type: Types.ObjectId })
+  service_category_id: Types.ObjectId;
 
   @Prop({ type: String })
   stylist_type: string;
