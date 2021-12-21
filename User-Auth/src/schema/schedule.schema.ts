@@ -11,6 +11,9 @@ export class ScheduleTimes {
 
   @Prop({ type: String, required: true })
   end_time: string;
+
+  created_at: string;
+  updated_at: string;
 }
 
 const ScheduleTimeSchema = SchemaFactory.createForClass(ScheduleTimes);
@@ -25,6 +28,9 @@ export class ScheduleDays {
 
   @Prop({ type: [ScheduleTimeSchema], default: [] })
   scheduled_times: [ScheduleTimes];
+
+  created_at: string;
+  updated_at: string;
 }
 
 const ScheduleDaysSchema = SchemaFactory.createForClass(ScheduleDays);
@@ -39,7 +45,7 @@ export class Schedules {
     ref: 'service_providers',
     required: true,
   })
-  stylist_id: string;
+  stylist_id: MongooseSchema.Types.ObjectId;
 
   @Prop({ type: Boolean, default: true })
   active: boolean;

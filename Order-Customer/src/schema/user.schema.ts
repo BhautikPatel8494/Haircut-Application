@@ -24,14 +24,14 @@ class FamilyMembers {
   })
   relation: string;
 
-  @Prop({ type: String, enum: ['men', 'women', 'kid', 'senior'] })
+  @Prop({ type: String, enum: ['men', 'women', 'kids', 'senior'] })
   user_type: string;
 
   @Prop({ type: Boolean, default: false })
-  default_profile: boolean;
+  default_profile?: boolean;
 
-  created_at: string
-  updated_at: string
+  created_at?: string
+  updated_at?: string
 }
 
 const FamilyMemberSchema = SchemaFactory.createForClass(FamilyMembers);
@@ -56,7 +56,7 @@ export class Addresses {
   lng: string;
 
   @Prop({ type: Object })
-  live_location: {
+  location: {
     type: string;
     coordinates: []
   };
@@ -78,12 +78,6 @@ export class Addresses {
 
   @Prop({ type: Boolean, default: false })
   active: boolean;
-
-  @Prop({ type: Object })
-  location: {
-    type: string,
-    coordinates: []
-  };
 }
 
 const AddressSchema = SchemaFactory.createForClass(Addresses);
@@ -112,9 +106,6 @@ const BlockStylistSchema = SchemaFactory.createForClass(BlockStylists);
 class Cards {
   @Prop({ type: String, default: null })
   type: string;
-
-  @Prop({ type: String, default: null })
-  logo: string;
 
   @Prop({ type: String, default: null })
   lastd: string;
@@ -178,12 +169,6 @@ export class Users {
   @Prop({ type: String })
   dob: string;
 
-  @Prop({ type: Object })
-  register_location: {
-    type: string;
-    coordinates: []
-  };
-
   @Prop({ type: Array, default: [] })
   preference: [];
 
@@ -223,6 +208,9 @@ export class Users {
     type: string;
     token: string;
   }];
+
+  @Prop({ type: String, default: null })
+  access_token: string;
 
   created_at: string
   updated_at: string

@@ -24,21 +24,21 @@ class FamilyMembers {
   })
   relation: string;
 
-  @Prop({ type: String, enum: ['men', 'women', 'kid', 'senior'] })
+  @Prop({ type: String, enum: ['men', 'women', 'kids', 'senior'] })
   user_type: string;
 
   @Prop({ type: Boolean, default: false })
-  default_profile: boolean;
+  default_profile?: boolean;
 
-  created_at: string
-  updated_at: string
+  created_at?: string
+  updated_at?: string
 }
 
 const FamilyMemberSchema = SchemaFactory.createForClass(FamilyMembers);
 
 @Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } })
 export class Addresses {
-  _id?: string;
+  _id: string;
 
   @Prop({ type: String, required: true })
   address: string;
@@ -56,7 +56,7 @@ export class Addresses {
   lng: string;
 
   @Prop({ type: Object })
-  live_location: {
+  location: {
     type: string;
     coordinates: []
   };
@@ -78,12 +78,6 @@ export class Addresses {
 
   @Prop({ type: Boolean, default: false })
   active: boolean;
-
-  @Prop({ type: Object })
-  location: {
-    type: string,
-    coordinates: []
-  };
 }
 
 const AddressSchema = SchemaFactory.createForClass(Addresses);
@@ -112,9 +106,6 @@ const BlockStylistSchema = SchemaFactory.createForClass(BlockStylists);
 class Cards {
   @Prop({ type: String, default: null })
   type: string;
-
-  @Prop({ type: String, default: null })
-  logo: string;
 
   @Prop({ type: String, default: null })
   lastd: string;
@@ -151,7 +142,7 @@ export class Users {
   @Prop({ type: String, required: true })
   lastname: string;
 
-  @Prop({ type: String })
+  @Prop({ type: String, required: true })
   middlename: string;
 
   @Prop({ type: String, required: true, unique: true })
@@ -177,18 +168,6 @@ export class Users {
 
   @Prop({ type: String })
   dob: string;
-
-  @Prop({ type: Object })
-  location: {
-    type: string;
-    coordinates: []
-  };
-
-  @Prop({ type: String })
-  lat: string;
-
-  @Prop({ type: String })
-  lng: string;
 
   @Prop({ type: Array, default: [] })
   preference: [];
@@ -226,9 +205,12 @@ export class Users {
 
   @Prop({ type: Array, default: [] })
   devices: [{
-    type: string;
+    device: string;
     token: string;
   }];
+
+  @Prop({ type: String, default: null })
+  access_token: string;
 
   created_at: string
   updated_at: string

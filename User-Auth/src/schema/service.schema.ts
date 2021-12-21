@@ -79,6 +79,9 @@ export class Services {
 
   @Prop({ type: Array, default: [] })
   seo_index: [];
+
+  created_at: string;
+  updated_at: string;
 }
 
 export const ServiceSchema = SchemaFactory.createForClass(Services);

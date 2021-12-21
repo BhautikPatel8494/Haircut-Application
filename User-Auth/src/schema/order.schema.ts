@@ -57,16 +57,18 @@ export class BillDetails {
   card_amount_used: number;
 
   @Prop({ type: Number, default: 0 })
-  cancellation_charge: number
-  
+  cancellation_charge: number;
+
   @Prop({ type: Number, default: 0 })
-  cancellation_fee: number
+  cancellation_fee: number;
 }
 
 const BillDetailSchema = SchemaFactory.createForClass(BillDetails);
 
 @Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }, collection: 'orders' })
 export class Orders {
+  _id?: string;
+
   @Prop({ type: String, required: true })
   order_number: string;
 
@@ -102,14 +104,11 @@ export class Orders {
   })
   direct_order: number;
 
-  @Prop({ type: String, default: new Date().getTime() })
-  date: string;
+  @Prop({ type: Number, default: new Date().getTime() })
+  date: number;
 
   @Prop({ type: Object, default: {} })
-  selected_slot: {
-    from_time: string,
-    to_time: string
-  };
+  selected_slot: object;
 
   @Prop({ type: MongooseSchema.Types.ObjectId })
   stylist_id: string;
@@ -127,7 +126,7 @@ export class Orders {
   booking_type: number;
 
   @Prop({ type: Array, default: [] })
-  order_rejected_by: [string];
+  order_rejected_by: [];
 
   @Prop({ type: Number, default: 0 })
   reschedule_count: number;

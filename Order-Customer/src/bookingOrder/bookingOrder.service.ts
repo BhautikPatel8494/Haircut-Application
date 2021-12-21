@@ -14,14 +14,14 @@ import {
 import { UtilityService } from 'src/utils/utility.service';
 import { ApiResponse } from 'src/utils/apiResponse.service';
 import { ServiceProviders } from 'src/schema/serviceProvider.schema';
-import { CancellationRule } from 'src/schema/cancellationRule.schema';
+import { CancellationRules } from 'src/schema/cancellationRule.schema';
 import { CustomerTransactions } from 'src/schema/customerTransaction.schema';
 import { Notifications } from 'src/schema/notification.schema';
 import { Schedules } from 'src/schema/schedule.schema';
 import { Orders } from 'src/schema/order.schema';
 import { Users } from 'src/schema/user.schema';
 import { CustomerCarts } from 'src/schema/customerCart.schema';
-import { DeviceNotification } from 'src/schema/deviceNotification.schema';
+import { DeviceNotifications } from 'src/schema/deviceNotification.schema';
 import { CancleOrderDto, ChangeStatusDto, ConfirmOtpServiceDto, CreateDirectOrderDto, CreateOrderDto, FilterDto, RebookingOrderDto } from './bookingOrder.dto';
 import { CurrentUserDto } from 'src/authentication/authentication.dto';
 
@@ -29,14 +29,14 @@ import { CurrentUserDto } from 'src/authentication/authentication.dto';
 export class BookingOrderService {
   constructor(
     @InjectModel('serviceProvider') private readonly serviceProviderModel: Model<ServiceProviders>,
-    @InjectModel('cancellationRule') private readonly cancellationRuleModel: Model<CancellationRule>,
+    @InjectModel('cancellationRule') private readonly cancellationRuleModel: Model<CancellationRules>,
     @InjectModel('customerTransaction') private readonly customerTransactionModel: Model<CustomerTransactions>,
     @InjectModel('notifications') private readonly notificationsModel: Model<Notifications>,
     @InjectModel('schedules') private readonly schedulesModel: Model<Schedules>,
     @InjectModel('order') private readonly orderModel: Model<Orders>,
     @InjectModel('user') private readonly userModel: Model<Users>,
     @InjectModel('customerCarts') private readonly customerCartsModel: Model<CustomerCarts>,
-    @InjectModel('deviceNotification') private readonly deviceNotificationModel: Model<DeviceNotification>,
+    @InjectModel('deviceNotification') private readonly deviceNotificationModel: Model<DeviceNotifications>,
     private apiResponse: ApiResponse,
     private utilityService: UtilityService,
   ) { }
@@ -154,7 +154,7 @@ export class BookingOrderService {
         address_type: activeAdress.address_type ? activeAdress.address_type : '',
         lat: activeAdress.lat ? activeAdress.lat : '',
         lng: activeAdress.lng ? activeAdress.lng : '',
-        location: activeAdress.live_location ? activeAdress.live_location : '',
+        location: activeAdress.location ? activeAdress.location : '',
       };
       let cart = await this.customerCartsModel.findOne({ _id: cart_id, user_id: userAuth._id });
       if (!cart) {

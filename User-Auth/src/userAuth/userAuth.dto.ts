@@ -1,6 +1,6 @@
 import { IsNotEmpty, IsNumber, IsOptional, IsString, IsEmail, IsArray } from "class-validator";
 
-export class stylistRegisterDto {
+export class StylistRegisterDto {
     @IsNotEmpty()
     @IsString()
     country_code: string;
@@ -118,7 +118,7 @@ export class stylistRegisterDto {
     device_token: string
 }
 
-export class stylistLoginDto {
+export class StylistLoginDto {
 
     @IsNotEmpty()
     @IsString()
@@ -133,7 +133,7 @@ export class stylistLoginDto {
     hash: string
 }
 
-export class stylistVerifyOTPConfirmDto {
+export class StylistVerifyOTPConfirmDto {
 
     @IsNotEmpty()
     @IsString()
@@ -160,7 +160,7 @@ export class stylistVerifyOTPConfirmDto {
     tags: [];
 }
 
-export class stylistCheckPhoneNumberDto {
+export class StylistCheckPhoneNumberDto {
 
     @IsNotEmpty()
     @IsString()
@@ -183,13 +183,13 @@ export class stylistCheckPhoneNumberDto {
     hash: string
 }
 
-export class checkStylistStatusDto {
+export class CheckStylistStatusDto {
     @IsNotEmpty()
     @IsString()
     stylist_id: string
 }
 
-export class customerRegisterDto {
+export class CustomerRegisterDto {
     @IsNotEmpty()
     @IsString()
     password: string;
@@ -239,7 +239,7 @@ export class customerRegisterDto {
     device_token: string
 }
 
-export class customerLoginDto {
+export class CustomerLoginDto {
 
     @IsNotEmpty()
     @IsString()
@@ -254,8 +254,7 @@ export class customerLoginDto {
     hash: string
 
 }
-
-export class customerVerifyOTPConfirmDto {
+export class CustomerVerifyOTPConfirmDto {
 
     @IsNotEmpty()
     @IsString()
@@ -286,7 +285,7 @@ export class customerVerifyOTPConfirmDto {
     tags: [];
 }
 
-export class customerLoginWithPassword {
+export class CustomerLoginWithPassword {
     @IsNotEmpty()
     @IsString()
     phone_number: string
@@ -308,7 +307,7 @@ export class customerLoginWithPassword {
     device_token: string
 }
 
-export class adminRegisterDto {
+export class AdminRegisterDto {
     @IsNotEmpty()
     @IsString()
     password: string;
@@ -326,7 +325,7 @@ export class adminRegisterDto {
     mobile_no: string
 }
 
-export class adminLoginDto {
+export class AdminLoginDto {
     @IsNotEmpty()
     @IsString()
     password: string;
@@ -336,7 +335,7 @@ export class adminLoginDto {
     email: string
 }
 
-export class adminVerifyDto {
+export class AdminVerifyDto {
     @IsNotEmpty()
     @IsString()
     authy_id: string
@@ -346,7 +345,7 @@ export class adminVerifyDto {
     token: string
 }
 
-export class adminForgotPasswordDto {
+export class AdminForgotPasswordDto {
 
     @IsNotEmpty()
     @IsEmail()
@@ -354,7 +353,7 @@ export class adminForgotPasswordDto {
 
 }
 
-export class adminResetPasswordDto {
+export class AdminResetPasswordDto {
     @IsNotEmpty()
     @IsString()
     password: string;
@@ -364,7 +363,7 @@ export class adminResetPasswordDto {
     email: string
 }
 
-export class enableDisableAdminDto {
+export class EnableDisableAdminDto {
     @IsNotEmpty()
     @IsString()
     admin_id: string
@@ -374,7 +373,7 @@ export class enableDisableAdminDto {
     status: string
 }
 
-export class enableDisableStylistDto {
+export class EnableDisableStylistDto {
     @IsNotEmpty()
     @IsString()
     stylist_id: string
@@ -384,7 +383,7 @@ export class enableDisableStylistDto {
     status: string
 }
 
-export class enableDisableCustomerDto {
+export class EnableDisableCustomerDto {
     @IsNotEmpty()
     @IsString()
     customer_id: string
@@ -394,7 +393,7 @@ export class enableDisableCustomerDto {
     status: string
 }
 
-export class checkUserStatusDto {
+export class CheckUserStatusDto {
 
     @IsOptional()
     @IsString()

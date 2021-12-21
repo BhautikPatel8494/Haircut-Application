@@ -11,6 +11,9 @@ export class ScheduleTimes {
 
   @Prop({ type: String, required: true })
   end_time: string;
+
+  created_at: string;
+  updated_at: string;
 }
 
 const ScheduleTimeSchema = SchemaFactory.createForClass(ScheduleTimes);
@@ -25,6 +28,9 @@ export class ScheduleDays {
 
   @Prop({ type: [ScheduleTimeSchema], default: [] })
   scheduled_times: [ScheduleTimes];
+
+  created_at: string;
+  updated_at: string;
 }
 
 const ScheduleDaysSchema = SchemaFactory.createForClass(ScheduleDays);

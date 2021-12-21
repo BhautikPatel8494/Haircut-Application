@@ -3,7 +3,6 @@ import { JwtModule } from "@nestjs/jwt";
 import { MongooseModule } from "@nestjs/mongoose";
 import { PassportModule } from "@nestjs/passport";
 
-import { CountriesWithCodesSchema } from "src/schema/countriesWithCode.schema";
 import { ServiceProviderSchema } from "src/schema/serviceProvider.schema";
 import { ApiResponse } from "src/utils/apiResponse.service";
 import { UtilityService } from "src/utils/utlity.service";
@@ -14,6 +13,7 @@ import { ConnectedAccountSchema } from "src/schema/connectedAccount.schema";
 import { UserSchema } from "src/schema/user.schema";
 import { AdminSchema } from "src/schema/admin.schema";
 import { SendMail } from "src/utils/sendMail.service";
+import { CountriesWithCodeSchema } from "src/schema/countriesWithCode.schema";
 
 @Module({
     imports: [
@@ -25,7 +25,7 @@ import { SendMail } from "src/utils/sendMail.service";
         }),
         MongooseModule.forFeature([
             { name: 'serviceProvider', schema: ServiceProviderSchema },
-            { name: 'countriesWithCodes', schema: CountriesWithCodesSchema },
+            { name: 'countriesWithCodes', schema: CountriesWithCodeSchema },
             { name: 'tempOtp', schema: TempOtpSchema },
             { name: 'connectedAccounts', schema: ConnectedAccountSchema },
             { name: 'user', schema: UserSchema },

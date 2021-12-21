@@ -12,9 +12,6 @@ export class Ratings {
     @Prop({ type: MongooseSchema.Types.ObjectId })
     custom_service_id: string;
 
-    @Prop({ type: MongooseSchema.Types.ObjectId })
-    order_id: string;
-
     @Prop({ type: String, enum: ['On-Demand', 'Regular'] })
     order_type: string;
 

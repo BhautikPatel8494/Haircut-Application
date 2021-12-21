@@ -57,16 +57,18 @@ export class BillDetails {
   card_amount_used: number;
 
   @Prop({ type: Number, default: 0 })
-  cancellation_charge: number
-  
+  cancellation_charge: number;
+
   @Prop({ type: Number, default: 0 })
-  cancellation_fee: number
+  cancellation_fee: number;
 }
 
 const BillDetailSchema = SchemaFactory.createForClass(BillDetails);
 
 @Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }, collection: 'orders' })
 export class Orders {
+  _id?: string;
+
   @Prop({ type: String, required: true })
   order_number: string;
 

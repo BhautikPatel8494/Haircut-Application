@@ -28,9 +28,6 @@ export class ServiceProviders {
   @Prop({ type: String, required: true })
   country_code: string;
 
-  @Prop({ type: Number })
-  disable: number;
-
   @Prop({ type: String })
   country: string;
 
@@ -142,12 +139,6 @@ export class ServiceProviders {
   @Prop({ type: Array, default: [] })
   preferences: [];
 
-  @Prop({ type: Object })
-  register_location: {
-    type: string;
-    coordinates: [];
-  };
-
   @Prop({ type: Array, default: [] })
   blocked_customer: [type: string];
 
@@ -168,6 +159,12 @@ export class ServiceProviders {
 
   @Prop({ type: String })
   stylist_referral_code: string;
+
+  @Prop({ type: Object })
+  register_location: {
+    type: string;
+    coordinates: []
+  };
 
   @Prop({ type: Object })
   live_location: {
@@ -222,15 +219,18 @@ export class ServiceProviders {
   @Prop({ type: Array, default: [] })
   portfolio_videos: [];
 
-  @Prop({ type: String, default: null})
-  access_token: string;
-
   @Prop({ type: String, default: 'basic' })
   active_schedule_type: string;
+
+  @Prop({ type: String, default: null })
+  access_token: string;
+
+  created_at: string;
+  updated_at: string;
 }
 
 const UpdatedSchema = SchemaFactory.createForClass(ServiceProviders);
 UpdatedSchema.index({ live_location: '2dsphere' })
 UpdatedSchema.index({ register_location: '2dsphere' })
 
-export const ServiceProviderSchema = UpdatedSchema;
+export const ServiceProviderSchema = UpdatedSchema

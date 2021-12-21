@@ -3,7 +3,7 @@ import { Schema as MongooseSchema } from 'mongoose';
 
 @Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }, collection: 'notifications' })
 export class Notifications {
-  @Prop({ type: Object, required: true})
+  @Prop()
   user: {
     user_id: { type: MongooseSchema.Types.ObjectId };
     full_name: { type: String };

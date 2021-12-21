@@ -14,9 +14,9 @@ import { UtilityService } from "src/utils/utlity.service";
 import { TempOtps } from "src/schema/tempOtp.schema";
 import { ConnectedAccounts } from 'src/schema/connectedAccount.schema';
 import { Addresses, Users } from 'src/schema/user.schema';
-import { Admin } from 'src/schema/admin.schema';
+import { Admins } from 'src/schema/admin.schema';
 import { SendMail } from 'src/utils/sendMail.service';
-import { adminForgotPasswordDto, adminLoginDto, adminRegisterDto, adminResetPasswordDto, adminVerifyDto, checkStylistStatusDto, checkUserStatusDto, customerLoginDto, customerLoginWithPassword, customerRegisterDto, customerVerifyOTPConfirmDto, enableDisableAdminDto, enableDisableCustomerDto, enableDisableStylistDto, stylistCheckPhoneNumberDto, stylistLoginDto, stylistRegisterDto, stylistVerifyOTPConfirmDto } from './userAuth.dto';
+import { AdminForgotPasswordDto, AdminLoginDto, AdminRegisterDto, AdminResetPasswordDto, AdminVerifyDto, CheckStylistStatusDto, CheckUserStatusDto, CustomerLoginDto, CustomerLoginWithPassword, CustomerRegisterDto, CustomerVerifyOTPConfirmDto, EnableDisableAdminDto, EnableDisableCustomerDto, EnableDisableStylistDto, StylistCheckPhoneNumberDto, StylistLoginDto, StylistRegisterDto, StylistVerifyOTPConfirmDto } from './userAuth.dto';
 
 const excludePhoneNumberList = [
     "8896800983",
@@ -43,12 +43,12 @@ export class UserAuthService {
         @InjectModel('connectedAccounts') private readonly connectedAccountsModel: Model<ConnectedAccounts>,
         @InjectModel('countriesWithCodes') private readonly countriesWithCodesModel: Model<CountriesWithCodes>,
         @InjectModel('user') private readonly userModel: Model<Users>,
-        @InjectModel('admin') private readonly adminModel: Model<Admin>,
+        @InjectModel('admin') private readonly adminModel: Model<Admins>,
         @InjectModel('tempOtp') private readonly tempOtpModel: Model<TempOtps>,
         private jwtService: JwtService,
     ) { }
 
-    async stylistRegister(files, stylistDetail: stylistRegisterDto, res: Response) {
+    async stylistRegister(files, stylistDetail: StylistRegisterDto, res: Response) {
         try {
 
             const { country_code, password, firstname, lastname, middlename, email, gender, dob, player_id, tags, phone_number, category, specialization,
@@ -57,7 +57,7 @@ export class UserAuthService {
 
             let customerCode = "INV" + this.utilityService.generateOTP()
             let stylistCode = "INV" + this.utilityService.generateOTP()
-            console.log(customerCode, stylistCode, country_code)
+
             let country = await this.countriesWithCodesModel.findOne({ dial_code: country_code }, { code: 1 })
 
             const hash = await bcrypt.hash(password, 10)
@@ -178,7 +178,7 @@ export class UserAuthService {
         }
     }
 
-    async stylistLogin(stylistLogin: stylistLoginDto, res: Response) {
+    async stylistLogin(stylistLogin: StylistLoginDto, res: Response) {
         try {
 
             const { phone_number, country_code, hash } = stylistLogin;
@@ -208,7 +208,7 @@ export class UserAuthService {
         }
     }
 
-    async stylistVerifyOTPConfirm(verifyOtp: stylistVerifyOTPConfirmDto, res: Response) {
+    async stylistVerifyOTPConfirm(verifyOtp: StylistVerifyOTPConfirmDto, res: Response) {
         const { phone_number, country_code, device_token, device_type, player_id, tags } = verifyOtp;
         try {
             let token = {
@@ -312,7 +312,7 @@ export class UserAuthService {
         }
     }
 
-    async stylistCheckPhoneNumber(checkPhoneNumber: stylistCheckPhoneNumberDto, res: Response) {
+    async stylistCheckPhoneNumber(checkPhoneNumber: StylistCheckPhoneNumberDto, res: Response) {
         try {
             const { type, email, phone_number, country_code, hash } = checkPhoneNumber;
             if (type == 'email') {
@@ -353,7 +353,7 @@ export class UserAuthService {
         }
     }
 
-    async checkStylistStatus(checkStatus: checkStylistStatusDto, res: Response) {
+    async checkStylistStatus(checkStatus: CheckStylistStatusDto, res: Response) {
         const { stylist_id } = checkStatus;
         try {
             let provider = await this.serviceProviderModel.findOne({ _id: stylist_id })
@@ -371,7 +371,7 @@ export class UserAuthService {
         }
     }
 
-    async customerRegister(files, customerLogin: customerRegisterDto, res: Response) {
+    async customerRegister(files, customerLogin: CustomerRegisterDto, res: Response) {
         try {
             const { password, firstname, lastname, email, lat, lng, gender, dob, country_code, phone_number, device_type, device_token } = customerLogin;
             const hash = await bcrypt.hash(password, 10)
@@ -420,7 +420,7 @@ export class UserAuthService {
         }
     }
 
-    async customerLogin(customerLogin: customerLoginDto, res: Response) {
+    async customerLogin(customerLogin: CustomerLoginDto, res: Response) {
         try {
 
             const { country_code, phone_number, hash } = customerLogin;
@@ -463,7 +463,7 @@ export class UserAuthService {
         }
     }
 
-    async customerVerifyOTPConfirm(verifyOtp: customerVerifyOTPConfirmDto, res: Response) {
+    async customerVerifyOTPConfirm(verifyOtp: CustomerVerifyOTPConfirmDto, res: Response) {
         const { phone_number, country_code, token, player_id, tags, device_type, device_token } = verifyOtp;
         try {
             const user = await this.userModel.findOne({ phone_number: phone_number, country_code: country_code, otp: token })
@@ -539,7 +539,7 @@ export class UserAuthService {
         }
     }
 
-    async customerLoginWithPassword(customerLoginDetail: customerLoginWithPassword, res: Response) {
+    async customerLoginWithPassword(customerLoginDetail: CustomerLoginWithPassword, res: Response) {
         const { phone_number, country_code, device_type, device_token, password } = customerLoginDetail;
         try {
             const user = await this.userModel.findOne({ phone_number: phone_number, country_code: country_code })
@@ -607,7 +607,7 @@ export class UserAuthService {
         }
     }
 
-    async adminRegister(adminDetail: adminRegisterDto, res: Response) {
+    async adminRegister(adminDetail: AdminRegisterDto, res: Response) {
         const { password, name, email, mobile_no, } = adminDetail;
         try {
             const hash = await bcrypt.hash(password, 10)
@@ -637,7 +637,7 @@ export class UserAuthService {
         }
     }
 
-    async adminLogin(loginDetail: adminLoginDto, res: Response) {
+    async adminLogin(loginDetail: AdminLoginDto, res: Response) {
         const { email, password } = loginDetail;
         try {
             const user = await this.adminModel.findOne({ email: email });
@@ -669,7 +669,7 @@ export class UserAuthService {
         }
     }
 
-    async adminVerify(verifyAdmin: adminVerifyDto, res: Response) {
+    async adminVerify(verifyAdmin: AdminVerifyDto, res: Response) {
         try {
             const { authy_id, token } = verifyAdmin;
 
@@ -696,7 +696,7 @@ export class UserAuthService {
         }
     }
 
-    async adminSendResetPasswordLink(adminForgotPassword: adminForgotPasswordDto, res: Response) {
+    async adminSendResetPasswordLink(adminForgotPassword: AdminForgotPasswordDto, res: Response) {
         const { email } = adminForgotPassword;
         try {
             let query = { email: email };
@@ -722,7 +722,7 @@ export class UserAuthService {
         }
     }
 
-    async adminResetPassword(resetPasswordAdmin: adminResetPasswordDto, res: Response) {
+    async adminResetPassword(resetPasswordAdmin: AdminResetPasswordDto, res: Response) {
         try {
             const { password, email } = resetPasswordAdmin;
             const hash = await bcrypt.hash(password, 10)
@@ -745,7 +745,7 @@ export class UserAuthService {
         }
     }
 
-    async enableDisableAdmin(adminDetail: enableDisableAdminDto, res: Response) {
+    async enableDisableAdmin(adminDetail: EnableDisableAdminDto, res: Response) {
         try {
             const { admin_id, status } = adminDetail;
             const updateAdmin = await this.adminModel.updateMany({ _id: { $in: admin_id } }, { $set: { status: status } }, { multi: true })
@@ -757,7 +757,7 @@ export class UserAuthService {
         }
     }
 
-    async enableDisableStylist(stylistDetail: enableDisableStylistDto, res: Response) {
+    async enableDisableStylist(stylistDetail: EnableDisableStylistDto, res: Response) {
         try {
             const { stylist_id, status } = stylistDetail;
             const updateStylist = await this.serviceProviderModel.updateMany({ _id: { $in: stylist_id } }, { $set: { status: status } }, { multi: true })
@@ -769,7 +769,7 @@ export class UserAuthService {
         }
     }
 
-    async enableDisableCustomer(customerDetail: enableDisableCustomerDto, res: Response) {
+    async enableDisableCustomer(customerDetail: EnableDisableCustomerDto, res: Response) {
         try {
             const { customer_id, status } = customerDetail;
             const updateCustomer = await this.userModel.updateMany({ _id: { $in: customer_id } }, { $set: { status: status } }, { multi: true })
@@ -781,7 +781,7 @@ export class UserAuthService {
         }
     }
 
-    async checkUserStatus(checkStatus: checkUserStatusDto, res: Response) {
+    async checkUserStatus(checkStatus: CheckUserStatusDto, res: Response) {
         try {
             let { user_type, email, phone_number, country_code } = checkStatus;
             if (!user_type) {

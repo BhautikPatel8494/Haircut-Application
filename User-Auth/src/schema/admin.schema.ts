@@ -1,32 +1,30 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose"
 
-export type adminType = Admin & Document;
+@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }, collection: 'admins' })
+export class Admins {
+    @Prop({ type: String, required: true })
+    name: string;
 
-@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }, collection: "admins"})
-export class Admin {
-  @Prop({ type: String, required: true })
-  name: string;
+    @Prop({ type: String, unique: true, required: true })
+    email: string;
 
-  @Prop({ type: String, required: true, unique: true })
-  email: string;
+    @Prop({ type: String, required: true })
+    password: string;
 
-  @Prop({ type: String, required: true })
-  password: string;
+    @Prop({ type: String, default: null })
+    profile: string;
 
-  @Prop({ type: Boolean, default: true })
-  status: boolean;
+    @Prop({ type: String, default: null })
+    mobile_no: string;
 
-  @Prop({ type: String, default: null })
-  profile: string;
+    @Prop({ type: String, default: null })
+    authy_id: string;
 
-  @Prop({ type: String, default: null })
-  mobile_no: string;
+    @Prop({ type: Boolean, default: true })
+    status: boolean;
 
-  @Prop({ type: String, default: null })
-  authy_id: string;
-
-  created_at: string;
-  updated_at: string;
+    created_at: string;
+    updated_at: string;
 }
 
-export const AdminSchema = SchemaFactory.createForClass(Admin);
+export const AdminSchema = SchemaFactory.createForClass(Admins);
