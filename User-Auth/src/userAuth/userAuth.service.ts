@@ -62,7 +62,7 @@ export class UserAuthService {
 
             const hash = await bcrypt.hash(password, 10)
 
-            var serviceProvider = new this.serviceProviderModel(
+            let serviceProvider = new this.serviceProviderModel(
                 {
                     firstname: firstname,
                     lastname: lastname,
@@ -612,7 +612,7 @@ export class UserAuthService {
         try {
             const hash = await bcrypt.hash(password, 10)
             // const authyRes = await authy.register_user(email, mobile_no, country_code)
-            var admin = new this.adminModel(
+            let admin = new this.adminModel(
                 {
                     name: name,
                     email: email,

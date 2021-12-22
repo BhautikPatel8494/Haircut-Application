@@ -4,7 +4,7 @@ import { Response } from "express";
 @Injectable()
 export class ApiResponse {
   successResponse(res: Response, msg: String) {
-    var resData = {
+    let resData = {
       status: 200,
       message: msg,
     };
@@ -12,7 +12,7 @@ export class ApiResponse {
   }
 
   successResponseWithData(res: Response, msg: String, data: Object) {
-    var resData = {
+    let resData = {
       status: 200,
       message: msg,
       data: data,
@@ -21,7 +21,7 @@ export class ApiResponse {
   }
 
   successResponseWithExtraData(res: Response, msg: String, extraData: Object, data: Object) {
-    var resData = {
+    let resData = {
       status: 200,
       message: msg,
       extraData,
@@ -31,7 +31,7 @@ export class ApiResponse {
   }
 
   successResponseWithCustomKeyName(res: Response, msg: String, data: Object) {
-    var resData = {
+    let resData = {
       status: 200,
       message: msg,
       user_exists: data
@@ -40,7 +40,7 @@ export class ApiResponse {
   }
 
   successResponseWithNoData(res: Response, msg: String) {
-    var resData = {
+    let resData = {
       status: 200,
       message: msg,
     };
@@ -48,7 +48,7 @@ export class ApiResponse {
   }
 
   ErrorResponse(res: Response, msg: String, data: Object) {
-    var resData = {
+    let resData = {
       status: 400,
       message: msg,
       data: data,
@@ -57,7 +57,7 @@ export class ApiResponse {
   }
 
   ErrorResponseWithExtraData(res: Response, msg: String, extradata: Object, data: Object) {
-    var resData = {
+    let resData = {
       status: 400,
       message: msg,
       extraData: extradata,
@@ -67,7 +67,7 @@ export class ApiResponse {
   }
 
   ErrorResponseWithoutData(res: Response, msg: String) {
-    var resData = {
+    let resData = {
       status: 400,
       message: msg,
     };
@@ -75,7 +75,7 @@ export class ApiResponse {
   }
 
   notFoundResponse(res: Response, msg: String, data: Object) {
-    var resData = {
+    let resData = {
       status: 404,
       message: msg,
       data: data,
@@ -94,7 +94,7 @@ export class ApiResponse {
   }
 
   notFoundResponseWithNoData(res: Response, msg: String) {
-    var resData = {
+    let resData = {
       status: 404,
       message: msg,
     };
@@ -102,7 +102,7 @@ export class ApiResponse {
   }
 
   validationErrorWithData(res: Response, msg: String, data: Object) {
-    var resData = {
+    let resData = {
       status: 422,
       message: msg,
       data: data,
@@ -111,7 +111,7 @@ export class ApiResponse {
   }
 
   validationError(res: Response, msg: String) {
-    var resData = {
+    let resData = {
       status: 422,
       message: msg,
     };
@@ -119,7 +119,7 @@ export class ApiResponse {
   }
 
   unauthorizedResponse(res: Response, msg: String, data: Object) {
-    var resData = {
+    let resData = {
       status: 401,
       message: msg,
       data: data,
@@ -128,7 +128,7 @@ export class ApiResponse {
   }
 
   unauthorizedResponseWithoutData(res: Response, msg: String) {
-    var resData = {
+    let resData = {
       status: 401,
       message: msg,
     };
