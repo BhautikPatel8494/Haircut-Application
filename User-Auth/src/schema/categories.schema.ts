@@ -46,6 +46,9 @@ export class Categories {
 
   @Prop({ type: Boolean, default: false })
   deleted: string;
+
+  created_at: string;
+  updated_at: string;
 }
 
 export const CategoriesSchema = SchemaFactory.createForClass(Categories);

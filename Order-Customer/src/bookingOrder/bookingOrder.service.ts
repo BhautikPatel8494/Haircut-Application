@@ -14,14 +14,14 @@ import {
 import { UtilityService } from 'src/utils/utility.service';
 import { ApiResponse } from 'src/utils/apiResponse.service';
 import { ServiceProviders } from 'src/schema/serviceProvider.schema';
-import { CancellationRule } from 'src/schema/cancellationRule.schema';
+import { CancellationRules } from 'src/schema/cancellationRule.schema';
 import { CustomerTransactions } from 'src/schema/customerTransaction.schema';
 import { Notifications } from 'src/schema/notification.schema';
 import { Schedules } from 'src/schema/schedule.schema';
 import { Orders } from 'src/schema/order.schema';
 import { Users } from 'src/schema/user.schema';
 import { CustomerCarts } from 'src/schema/customerCart.schema';
-import { DeviceNotification } from 'src/schema/deviceNotification.schema';
+import { DeviceNotifications } from 'src/schema/deviceNotification.schema';
 import { CancleOrderDto, ChangeStatusDto, ConfirmOtpServiceDto, CreateDirectOrderDto, CreateOrderDto, FilterDto, RebookingOrderDto } from './bookingOrder.dto';
 import { CurrentUserDto } from 'src/authentication/authentication.dto';
 import { PaymentHandlerService } from '../utils/paymentHandler.service';
@@ -30,14 +30,14 @@ import { PaymentHandlerService } from '../utils/paymentHandler.service';
 export class BookingOrderService {
   constructor(
     @InjectModel('ServiceProvider') private readonly serviceProviderModel: Model<ServiceProviders>,
-    @InjectModel('CancellationRule') private readonly cancellationRuleModel: Model<CancellationRule>,
+    @InjectModel('CancellationRule') private readonly cancellationRuleModel: Model<CancellationRules>,
     @InjectModel('CustomerTransaction') private readonly customerTransactionModel: Model<CustomerTransactions>,
     @InjectModel('Notification') private readonly notificationsModel: Model<Notifications>,
     @InjectModel('Schedule') private readonly schedulesModel: Model<Schedules>,
     @InjectModel('Order') private readonly orderModel: Model<Orders>,
     @InjectModel('User') private readonly userModel: Model<Users>,
     @InjectModel('CustomerCart') private readonly customerCartsModel: Model<CustomerCarts>,
-    @InjectModel('DeviceNotification') private readonly deviceNotificationModel: Model<DeviceNotification>,
+    @InjectModel('DeviceNotification') private readonly deviceNotificationModel: Model<DeviceNotifications>,
     private readonly paymentHandlerService: PaymentHandlerService,
     private readonly apiResponse: ApiResponse,
     private readonly utilityService: UtilityService,
@@ -670,7 +670,7 @@ export class BookingOrderService {
           stylist_id: stylist_id,
           started_service_at: Math.floor(Date.now()),
         };
-        
+
         await this.orderModel.updateOne({ _id: booking_id }, { $set: updateOrderData });
         this.apiResponse.successResponseWithData(res, 'Service started!', updateOrderData);
       } else {

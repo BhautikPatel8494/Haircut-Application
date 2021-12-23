@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Schema as MongooseSchema } from 'mongoose';
+import { Types } from 'mongoose';
 
 @Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }, collection: 'custom_services' })
 export class CustomServices {
@@ -10,18 +10,18 @@ export class CustomServices {
   description: string;
 
   @Prop({
-    type: MongooseSchema.Types.ObjectId,
+    type: Types.ObjectId,
     ref: 'service_providers',
     required: true,
   })
-  stylist_id: MongooseSchema.Types.ObjectId;
+  stylist_id: Types.ObjectId;
 
   @Prop({
-    type: MongooseSchema.Types.ObjectId,
+    type: Types.ObjectId,
     ref: 'categories',
     required: true,
   })
-  category_id: MongooseSchema.Types.ObjectId;
+  category_id: Types.ObjectId;
 
   @Prop({ type: Number, default: 0 })
   regular_price: number;

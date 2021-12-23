@@ -54,6 +54,9 @@ export class Configs {
 
   @Prop({ type: [ScheduleSchema], default: [] })
   schedule: [Schedules];
+
+  created_at: string;
+  updated_at: string;
 }
 
 export const ConfigSchema = SchemaFactory.createForClass(Configs);

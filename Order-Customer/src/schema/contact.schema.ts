@@ -1,9 +1,9 @@
 import { Schema, SchemaFactory, Prop } from '@nestjs/mongoose';
-import { Schema as MongooseSchema } from 'mongoose';
+import { Types } from 'mongoose';
 
 @Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }, collection: 'contacts' })
-export class Contact {
-    @Prop({ type: MongooseSchema.Types.ObjectId, required: true })
+export class Contacts {
+    @Prop({ type: Types.ObjectId, required: true })
     user_id: string;
 
     @Prop({ type: String, enum: ['stylist', 'customer'], default: 'customer' })
@@ -17,6 +17,9 @@ export class Contact {
 
     @Prop({ type: Boolean, default: true })
     status: boolean
+
+    created_at: string;
+    updated_at: string;
 }
 
-export const ContactSchema = SchemaFactory.createForClass(Contact);
+export const ContactSchema = SchemaFactory.createForClass(Contacts);

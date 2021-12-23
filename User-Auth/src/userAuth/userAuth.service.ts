@@ -4,7 +4,7 @@ import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
 import * as bcrypt from 'bcrypt';
 import { Twilio } from 'twilio';
-import { Request, Response } from "express";
+import { Response } from "express";
 
 import { CountriesWithCodes } from "src/schema/countriesWithCode.schema";
 import { ServiceProviders } from "src/schema/serviceProvider.schema";
@@ -14,8 +14,9 @@ import { UtilityService } from "src/utils/utlity.service";
 import { TempOtps } from "src/schema/tempOtp.schema";
 import { ConnectedAccounts } from 'src/schema/connectedAccount.schema';
 import { Addresses, Users } from 'src/schema/user.schema';
-import { Admin } from 'src/schema/admin.schema';
+import { Admins } from 'src/schema/admin.schema';
 import { SendMail } from 'src/utils/sendMail.service';
+import { AdminForgotPasswordDto, AdminLoginDto, AdminRegisterDto, AdminResetPasswordDto, AdminVerifyDto, CheckStylistStatusDto, CheckUserStatusDto, CustomerLoginDto, CustomerLoginWithPassword, CustomerRegisterDto, CustomerVerifyOTPConfirmDto, EnableDisableAdminDto, EnableDisableCustomerDto, EnableDisableStylistDto, StylistCheckPhoneNumberDto, StylistLoginDto, StylistRegisterDto, StylistVerifyOTPConfirmDto } from './userAuth.dto';
 
 const excludePhoneNumberList = [
     "8896800983",
@@ -42,26 +43,26 @@ export class UserAuthService {
         @InjectModel('connectedAccounts') private readonly connectedAccountsModel: Model<ConnectedAccounts>,
         @InjectModel('countriesWithCodes') private readonly countriesWithCodesModel: Model<CountriesWithCodes>,
         @InjectModel('user') private readonly userModel: Model<Users>,
-        @InjectModel('admin') private readonly adminModel: Model<Admin>,
+        @InjectModel('admin') private readonly adminModel: Model<Admins>,
         @InjectModel('tempOtp') private readonly tempOtpModel: Model<TempOtps>,
         private jwtService: JwtService,
     ) { }
 
-    async stylistRegister(files, req: Request, res: Response) {
+    async stylistRegister(files, stylistDetail: StylistRegisterDto, res: Response) {
         try {
 
             const { country_code, password, firstname, lastname, middlename, email, gender, dob, player_id, tags, phone_number, category, specialization,
                 experience, address, city, state, zip_code, ssn_number, cosmetology_license, driving_license, contractor, liability_waiver,
-                privacy_policy, terms_condition, lat, lng, device_type, device_token } = req.body;
+                privacy_policy, terms_condition, lat, lng, device_type, device_token } = stylistDetail;
 
             let customerCode = "INV" + this.utilityService.generateOTP()
             let stylistCode = "INV" + this.utilityService.generateOTP()
-            console.log(customerCode, stylistCode, country_code)
+
             let country = await this.countriesWithCodesModel.findOne({ dial_code: country_code }, { code: 1 })
 
             const hash = await bcrypt.hash(password, 10)
 
-            var serviceProvider = new this.serviceProviderModel(
+            let serviceProvider = new this.serviceProviderModel(
                 {
                     firstname: firstname,
                     lastname: lastname,
@@ -177,10 +178,10 @@ export class UserAuthService {
         }
     }
 
-    async stylistLogin(req: Request, res: Response) {
+    async stylistLogin(stylistLogin: StylistLoginDto, res: Response) {
         try {
 
-            const { phone_number, country_code, hash } = req.body;
+            const { phone_number, country_code, hash } = stylistLogin;
 
             const user = await this.serviceProviderModel.findOne({ phone_number: phone_number, country_code: country_code })
             if (user) {
@@ -207,8 +208,8 @@ export class UserAuthService {
         }
     }
 
-    async stylistVerifyOTPConfirm(req: Request, res: Response) {
-        const { phone_number, country_code, device_token, device_type, player_id, tags } = req.body;
+    async stylistVerifyOTPConfirm(verifyOtp: StylistVerifyOTPConfirmDto, res: Response) {
+        const { phone_number, country_code, device_token, device_type, player_id, tags } = verifyOtp;
         try {
             let token = {
                 type: device_type,
@@ -311,9 +312,9 @@ export class UserAuthService {
         }
     }
 
-    async stylistCheckPhoneNumber(req: Request, res: Response) {
+    async stylistCheckPhoneNumber(checkPhoneNumber: StylistCheckPhoneNumberDto, res: Response) {
         try {
-            const { type, email, phone_number, country_code, hash } = req.body;
+            const { type, email, phone_number, country_code, hash } = checkPhoneNumber;
             if (type == 'email') {
                 const findStylistEmail = await this.serviceProviderModel.find({ email: email })
                 if (findStylistEmail) {
@@ -352,8 +353,8 @@ export class UserAuthService {
         }
     }
 
-    async checkStylistStatus(req: Request, res: Response) {
-        const { stylist_id } = req.body;
+    async checkStylistStatus(checkStatus: CheckStylistStatusDto, res: Response) {
+        const { stylist_id } = checkStatus;
         try {
             let provider = await this.serviceProviderModel.findOne({ _id: stylist_id })
             if (!provider) {
@@ -370,9 +371,9 @@ export class UserAuthService {
         }
     }
 
-    async customerRegister(files, req: Request, res: Response) {
+    async customerRegister(files, customerLogin: CustomerRegisterDto, res: Response) {
         try {
-            const { password, firstname, lastname, email, lat, lng, gender, dob, country_code, phone_number, device_type, device_token } = req.body;
+            const { password, firstname, lastname, email, lat, lng, gender, dob, country_code, phone_number, device_type, device_token } = customerLogin;
             const hash = await bcrypt.hash(password, 10)
             const createObj = {
                 firstname: firstname,
@@ -419,10 +420,10 @@ export class UserAuthService {
         }
     }
 
-    async customerLogin(req: Request, res: Response) {
+    async customerLogin(customerLogin: CustomerLoginDto, res: Response) {
         try {
 
-            const { country_code, phone_number, hash } = req.body;
+            const { country_code, phone_number, hash } = customerLogin;
 
             const user = await this.userModel.findOne({ phone_number: phone_number, country_code: country_code })
             if (user) {
@@ -462,8 +463,8 @@ export class UserAuthService {
         }
     }
 
-    async customerVerifyOTPConfirm(req: Request, res: Response) {
-        const { phone_number, country_code, token, player_id, tags, device_type, device_token } = req.body;
+    async customerVerifyOTPConfirm(verifyOtp: CustomerVerifyOTPConfirmDto, res: Response) {
+        const { phone_number, country_code, token, player_id, tags, device_type, device_token } = verifyOtp;
         try {
             const user = await this.userModel.findOne({ phone_number: phone_number, country_code: country_code, otp: token })
             if (user) {
@@ -538,8 +539,8 @@ export class UserAuthService {
         }
     }
 
-    async customerLoginWithPassword(req: Request, res: Response) {
-        const { phone_number, country_code, device_type, device_token, password } = req.body;
+    async customerLoginWithPassword(customerLoginDetail: CustomerLoginWithPassword, res: Response) {
+        const { phone_number, country_code, device_type, device_token, password } = customerLoginDetail;
         try {
             const user = await this.userModel.findOne({ phone_number: phone_number, country_code: country_code })
             if (user) {
@@ -606,12 +607,12 @@ export class UserAuthService {
         }
     }
 
-    async adminRegister(req: Request, res: Response) {
-        const { password, name, email, mobile_no, } = req.body;
+    async adminRegister(adminDetail: AdminRegisterDto, res: Response) {
+        const { password, name, email, mobile_no, } = adminDetail;
         try {
             const hash = await bcrypt.hash(password, 10)
             // const authyRes = await authy.register_user(email, mobile_no, country_code)
-            var admin = new this.adminModel(
+            let admin = new this.adminModel(
                 {
                     name: name,
                     email: email,
@@ -636,8 +637,8 @@ export class UserAuthService {
         }
     }
 
-    async adminLogin(req: Request, res: Response) {
-        const { email, password } = req.body;
+    async adminLogin(loginDetail: AdminLoginDto, res: Response) {
+        const { email, password } = loginDetail;
         try {
             const user = await this.adminModel.findOne({ email: email });
             if (user) {
@@ -668,9 +669,9 @@ export class UserAuthService {
         }
     }
 
-    async adminVerify(req: Request, res: Response) {
+    async adminVerify(verifyAdmin: AdminVerifyDto, res: Response) {
         try {
-            const { authy_id, token } = req.body;
+            const { authy_id, token } = verifyAdmin;
 
             // authy.verify(authy_id, token = token, function (err, result) {
             // if (result) {
@@ -695,8 +696,8 @@ export class UserAuthService {
         }
     }
 
-    async adminSendResetPasswordLink(req: Request, res: Response) {
-        const { email } = req.body;
+    async adminSendResetPasswordLink(adminForgotPassword: AdminForgotPasswordDto, res: Response) {
+        const { email } = adminForgotPassword;
         try {
             let query = { email: email };
             const user = await this.adminModel.findOne(query)
@@ -721,9 +722,9 @@ export class UserAuthService {
         }
     }
 
-    async adminResetPassword(req: Request, res: Response) {
+    async adminResetPassword(resetPasswordAdmin: AdminResetPasswordDto, res: Response) {
         try {
-            const { password, email } = req.body;
+            const { password, email } = resetPasswordAdmin;
             const hash = await bcrypt.hash(password, 10)
             const admin = await this.adminModel.findOne({ email: email })
             await this.adminModel.updateOne({ email: email }, {
@@ -744,9 +745,9 @@ export class UserAuthService {
         }
     }
 
-    async enableDisableAdmin(req: Request, res: Response) {
+    async enableDisableAdmin(adminDetail: EnableDisableAdminDto, res: Response) {
         try {
-            const { admin_id, status } = req.body;
+            const { admin_id, status } = adminDetail;
             const updateAdmin = await this.adminModel.updateMany({ _id: { $in: admin_id } }, { $set: { status: status } }, { multi: true })
             if (updateAdmin) {
                 return this.apiResponse.successResponseWithNoData(res, 'Record updated!');
@@ -756,9 +757,9 @@ export class UserAuthService {
         }
     }
 
-    async enableDisableStylist(req: Request, res: Response) {
+    async enableDisableStylist(stylistDetail: EnableDisableStylistDto, res: Response) {
         try {
-            const { stylist_id, status } = req.body;
+            const { stylist_id, status } = stylistDetail;
             const updateStylist = await this.serviceProviderModel.updateMany({ _id: { $in: stylist_id } }, { $set: { status: status } }, { multi: true })
             if (updateStylist) {
                 return this.apiResponse.successResponseWithNoData(res, 'Record updated!');
@@ -768,9 +769,9 @@ export class UserAuthService {
         }
     }
 
-    async enableDisableCustomer(req: Request, res: Response) {
+    async enableDisableCustomer(customerDetail: EnableDisableCustomerDto, res: Response) {
         try {
-            const { customer_id, status } = req.body;
+            const { customer_id, status } = customerDetail;
             const updateCustomer = await this.userModel.updateMany({ _id: { $in: customer_id } }, { $set: { status: status } }, { multi: true })
             if (updateCustomer) {
                 return this.apiResponse.successResponseWithNoData(res, 'Record updated!');
@@ -780,14 +781,14 @@ export class UserAuthService {
         }
     }
 
-    async checkUserStatus(req: Request, res: Response) {
+    async checkUserStatus(checkStatus: CheckUserStatusDto, res: Response) {
         try {
-            let { user_type, email, phone_number, country_code } = req.body;
+            let { user_type, email, phone_number, country_code } = checkStatus;
             if (!user_type) {
                 return this.apiResponse.ErrorResponseWithoutData(res, 'Please enter user type!');
             }
-            user_type = parseInt(user_type);
-            if (user_type === 1) { // Admin
+            const userType = parseInt(user_type);
+            if (userType === 1) { // Admin
                 if (!email) {
                     return this.apiResponse.ErrorResponseWithoutData(res, 'Please enter email!');
                 }
@@ -802,7 +803,7 @@ export class UserAuthService {
                 }
             }
 
-            else if (user_type === 2) { // Stylist
+            else if (userType === 2) { // Stylist
                 if (!phone_number) {
                     return this.apiResponse.ErrorResponseWithoutData(res, 'Please enter phone number!');
                 }
@@ -825,7 +826,7 @@ export class UserAuthService {
                 }
             }
 
-            else if (user_type === 3) { // Customer
+            else if (userType === 3) { // Customer
                 if (!phone_number) {
                     return this.apiResponse.ErrorResponseWithoutData(res, 'Please enter phone number!');
                 }

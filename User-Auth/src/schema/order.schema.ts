@@ -1,10 +1,10 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Schema as MongooseSchema } from 'mongoose';
+import { Types } from 'mongoose';
 
 @Schema()
 class addOns {
-  @Prop({ type: MongooseSchema.Types.ObjectId })
-  service_id: MongooseSchema.Types.ObjectId;
+  @Prop({ type: Types.ObjectId })
+  service_id: Types.ObjectId;
 
   @Prop({ type: String })
   title: string;
@@ -57,21 +57,23 @@ export class BillDetails {
   card_amount_used: number;
 
   @Prop({ type: Number, default: 0 })
-  cancellation_charge: number
-  
+  cancellation_charge: number;
+
   @Prop({ type: Number, default: 0 })
-  cancellation_fee: number
+  cancellation_fee: number;
 }
 
 const BillDetailSchema = SchemaFactory.createForClass(BillDetails);
 
 @Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }, collection: 'orders' })
 export class Orders {
+  _id?: string;
+
   @Prop({ type: String, required: true })
   order_number: string;
 
-  @Prop({ type: MongooseSchema.Types.ObjectId, required: true })
-  user_id: MongooseSchema.Types.ObjectId;
+  @Prop({ type: Types.ObjectId, required: true })
+  user_id: Types.ObjectId;
 
   @Prop({ type: Number, enum: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], default: 0 })
   booking_status: number;
@@ -111,7 +113,7 @@ export class Orders {
     to_time: string
   };
 
-  @Prop({ type: MongooseSchema.Types.ObjectId })
+  @Prop({ type: Types.ObjectId })
   stylist_id: string;
 
   @Prop({ type: Array, required: true })

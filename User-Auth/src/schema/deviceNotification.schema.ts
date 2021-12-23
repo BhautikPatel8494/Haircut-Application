@@ -2,7 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 
 
 @Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }, collection: 'device_notifications' })
-export class DeviceNotification {
+export class DeviceNotifications {
   @Prop({ type: String, required: true })
   title: string;
 
@@ -16,4 +16,4 @@ export class DeviceNotification {
   updated_at: string;
 }
 
-export const DeviceNotificationSchema = SchemaFactory.createForClass(DeviceNotification);
+export const DeviceNotificationSchema = SchemaFactory.createForClass(DeviceNotifications);

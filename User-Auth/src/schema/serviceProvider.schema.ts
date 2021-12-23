@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Schema as MongooseSchema } from 'mongoose';
+import { Types } from 'mongoose';
 
 @Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }, collection: 'service_providers' })
 export class ServiceProviders {
@@ -28,9 +28,6 @@ export class ServiceProviders {
   @Prop({ type: String, required: true })
   country_code: string;
 
-  @Prop({ type: Number })
-  disable: number;
-
   @Prop({ type: String })
   country: string;
 
@@ -50,18 +47,18 @@ export class ServiceProviders {
   wallet: number;
 
   @Prop({
-    type: MongooseSchema.Types.ObjectId,
+    type: Types.ObjectId,
     ref: 'categories',
     required: true,
   })
-  category: MongooseSchema.Types.ObjectId;
+  category: Types.ObjectId;
 
   @Prop({
-    type: MongooseSchema.Types.ObjectId,
+    type: Types.ObjectId,
     ref: 'categories.specialization',
     required: true,
   })
-  specialization: MongooseSchema.Types.ObjectId;
+  specialization: Types.ObjectId;
 
   @Prop({
     type: String,
@@ -142,12 +139,6 @@ export class ServiceProviders {
   @Prop({ type: Array, default: [] })
   preferences: [];
 
-  @Prop({ type: Object })
-  register_location: {
-    type: string;
-    coordinates: [];
-  };
-
   @Prop({ type: Array, default: [] })
   blocked_customer: [type: string];
 
@@ -168,6 +159,12 @@ export class ServiceProviders {
 
   @Prop({ type: String })
   stylist_referral_code: string;
+
+  @Prop({ type: Object })
+  register_location: {
+    type: string;
+    coordinates: []
+  };
 
   @Prop({ type: Object })
   live_location: {
@@ -222,15 +219,21 @@ export class ServiceProviders {
   @Prop({ type: Array, default: [] })
   portfolio_videos: [];
 
-  @Prop({ type: String, default: null})
-  access_token: string;
-
   @Prop({ type: String, default: 'basic' })
   active_schedule_type: string;
+
+  @Prop({ type: String, default: null })
+  access_token: string;
+
+  @Prop({ type: Number, default:null})
+  disable: number;
+
+  created_at: string;
+  updated_at: string;
 }
 
 const UpdatedSchema = SchemaFactory.createForClass(ServiceProviders);
 UpdatedSchema.index({ live_location: '2dsphere' })
 UpdatedSchema.index({ register_location: '2dsphere' })
 
-export const ServiceProviderSchema = UpdatedSchema;
+export const ServiceProviderSchema = UpdatedSchema

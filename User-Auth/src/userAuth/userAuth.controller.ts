@@ -1,8 +1,9 @@
-import { Controller, Post, Req, Res, UploadedFiles, UseInterceptors } from "@nestjs/common";
+import { Body, Controller, Post, Res, UploadedFiles, UseInterceptors } from "@nestjs/common";
 import { AnyFilesInterceptor } from "@nestjs/platform-express";
-import { Request, Response } from "express";
+import { Response } from "express";
 
 import { storage } from "src/utils/fileUpload";
+import { AdminForgotPasswordDto, AdminLoginDto, AdminRegisterDto, AdminResetPasswordDto, AdminVerifyDto, CheckStylistStatusDto, CheckUserStatusDto, CustomerLoginDto, CustomerLoginWithPassword, CustomerRegisterDto, CustomerVerifyOTPConfirmDto, EnableDisableAdminDto, EnableDisableCustomerDto, EnableDisableStylistDto, StylistCheckPhoneNumberDto, StylistLoginDto, StylistRegisterDto, StylistVerifyOTPConfirmDto } from "./userAuth.dto";
 import { UserAuthService } from "./userAuth.service";
 
 @Controller("api")
@@ -12,93 +13,93 @@ export class UsertAuthController {
 
     @Post("register")
     @UseInterceptors(AnyFilesInterceptor(storage))
-    async stylistRegister(@UploadedFiles() files: any, @Req() req: Request, @Res() res: Response) {
-        return await this.userAuthService.stylistRegister(files, req, res)
+    async stylistRegister(@UploadedFiles() files: any, @Body() stylistDetail: StylistRegisterDto, @Res() res: Response) {
+        return await this.userAuthService.stylistRegister(files, stylistDetail, res)
     }
 
     @Post("login")
-    async stylistLogin(@Req() req: Request, @Res() res: Response) {
-        return await this.userAuthService.stylistLogin(req, res)
+    async stylistLogin(@Body() stylistLogin: StylistLoginDto, @Res() res: Response) {
+        return await this.userAuthService.stylistLogin(stylistLogin, res)
     }
 
     @Post("verify-token")
-    async stylistVerifyOTPConfirm(@Req() req: Request, @Res() res: Response) {
-        return await this.userAuthService.stylistVerifyOTPConfirm(req, res)
+    async stylistVerifyOTPConfirm(@Body() verifyOtp: StylistVerifyOTPConfirmDto, @Res() res: Response) {
+        return await this.userAuthService.stylistVerifyOTPConfirm(verifyOtp, res)
     }
 
     @Post('check-phone-number')
-    async stylistCheckPhoneNumber(@Req() req: Request, @Res() res: Response) {
-        return await this.userAuthService.stylistCheckPhoneNumber(req, res)
+    async stylistCheckPhoneNumber(@Body() checkPhoneNumber: StylistCheckPhoneNumberDto, @Res() res: Response) {
+        return await this.userAuthService.stylistCheckPhoneNumber(checkPhoneNumber, res)
     }
 
     @Post('check-stylist-status')
-    async checkStylistStatus(@Req() req: Request, @Res() res: Response) {
-        return await this.userAuthService.checkStylistStatus(req, res)
+    async checkStylistStatus(@Body() checkStatus: CheckStylistStatusDto, @Res() res: Response) {
+        return await this.userAuthService.checkStylistStatus(checkStatus, res)
     }
 
     @Post('c-register')
     @UseInterceptors(AnyFilesInterceptor(storage))
-    async customerRegister(@UploadedFiles() files: any, @Req() req: Request, @Res() res: Response) {
-        return await this.userAuthService.customerRegister(files, req, res)
+    async customerRegister(@UploadedFiles() files: any, @Body() customerLogin: CustomerRegisterDto, @Res() res: Response) {
+        return await this.userAuthService.customerRegister(files, customerLogin, res)
     }
 
     @Post('c-login')
-    async customerLogin(@Req() req: Request, @Res() res: Response) {
-        return await this.userAuthService.customerLogin(req, res)
+    async customerLogin(@Body() customerLogin: CustomerLoginDto, @Res() res: Response) {
+        return await this.userAuthService.customerLogin(customerLogin, res)
     }
 
     @Post('c-verify-token')
-    async customerVerifyOTPConfirm(@Req() req: Request, @Res() res: Response) {
-        return await this.userAuthService.customerVerifyOTPConfirm(req, res)
+    async customerVerifyOTPConfirm(@Body() verifyOtp: CustomerVerifyOTPConfirmDto, @Res() res: Response) {
+        return await this.userAuthService.customerVerifyOTPConfirm(verifyOtp, res)
     }
 
     @Post('c-login-with-password')
-    async customerLoginWithPassword(@Req() req: Request, @Res() res: Response) {
-        return await this.userAuthService.customerLoginWithPassword(req, res)
+    async customerLoginWithPassword(@Body() customerLoginDetail: CustomerLoginWithPassword, @Res() res: Response) {
+        return await this.userAuthService.customerLoginWithPassword(customerLoginDetail, res)
     }
 
     @Post("a-register")
-    async adminRegister(@Req() req: Request, @Res() res: Response) {
-        return await this.userAuthService.adminRegister(req, res)
+    async adminRegister(@Body() adminDetail: AdminRegisterDto, @Res() res: Response) {
+        return await this.userAuthService.adminRegister(adminDetail, res)
     }
 
     @Post('a-login')
-    async adminLogin(@Req() req: Request, @Res() res: Response) {
-        return await this.userAuthService.adminLogin(req, res)
+    async adminLogin(@Body() loginDetail: AdminLoginDto, @Res() res: Response) {
+        return await this.userAuthService.adminLogin(loginDetail, res)
     }
 
     @Post("a-verify")
-    async adminVerify(@Req() req: Request, @Res() res: Response) {
-        return await this.userAuthService.adminVerify(req, res)
+    async adminVerify(@Body() verifyAdmin: AdminVerifyDto, @Res() res: Response) {
+        return await this.userAuthService.adminVerify(verifyAdmin, res)
     }
 
     @Post('a-forgot-password')
-    async adminSendResetPasswordLink(@Req() req: Request, @Res() res: Response) {
-        return await this.userAuthService.adminSendResetPasswordLink(req, res)
+    async adminSendResetPasswordLink(@Body() adminForgotPassword: AdminForgotPasswordDto, @Res() res: Response) {
+        return await this.userAuthService.adminSendResetPasswordLink(adminForgotPassword, res)
     }
 
     @Post('a-reset-password')
-    async adminResetPassword(@Req() req: Request, @Res() res: Response){
-        return await this.userAuthService.adminResetPassword(req,res)
+    async adminResetPassword(@Body() resetPasswordAdmin: AdminResetPasswordDto, @Res() res: Response){
+        return await this.userAuthService.adminResetPassword(resetPasswordAdmin,res)
     }
 
     @Post('enable-disable-admin')
-    async enableDisableAdmin(@Req() req: Request, @Res() res: Response){
-        return await this.userAuthService.enableDisableAdmin(req,res)
+    async enableDisableAdmin(@Body() adminDetail: EnableDisableAdminDto, @Res() res: Response){
+        return await this.userAuthService.enableDisableAdmin(adminDetail,res)
     }
 
     @Post('enable-disable-stylist')
-    async enableDisableStylist(@Req() req: Request, @Res() res: Response){
-        return await this.userAuthService.enableDisableStylist(req,res)
+    async enableDisableStylist(@Body() stylistDetail: EnableDisableStylistDto, @Res() res: Response){
+        return await this.userAuthService.enableDisableStylist(stylistDetail,res)
     }
 
     @Post('enable-disable-customer')
-    async enableDisableCustomer(@Req() req: Request, @Res() res: Response){
-        return await this.userAuthService.enableDisableCustomer(req,res)
+    async enableDisableCustomer(@Body() customerDetail: EnableDisableCustomerDto, @Res() res: Response){
+        return await this.userAuthService.enableDisableCustomer(customerDetail,res)
     }
     
     @Post("authorize")
-    async checkUserStatus(@Req() req: Request, @Res() res: Response){
-        return await this.userAuthService.checkUserStatus(req,res)
+    async checkUserStatus(@Body() checkStatus: CheckUserStatusDto, @Res() res: Response){
+        return await this.userAuthService.checkUserStatus(checkStatus,res)
     }
 }

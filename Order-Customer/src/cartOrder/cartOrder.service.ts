@@ -216,7 +216,7 @@ export class CartOrderService {
                   }
                 } else {
                   const cartPushArray = {
-                    _id: new Types.ObjectId(),
+                    _id: new Types.ObjectId().toString(),
                     service_id: service_id,
                     title: title,
                     is_custom: isCustom,
@@ -508,7 +508,7 @@ export class CartOrderService {
           for (var i = 0; i < cart.cart_profiles.length; i++) {
             if (cart.cart_profiles[i].profile_id.toString() === profile_id && cart.cart_profiles[i].cart_items.length) {
               for (var j = 0; j < cart.cart_profiles[i].cart_items.length; j++) {
-                if (cart.cart_profiles[i].cart_items[j]._id == cart_item_id) {
+                if (cart.cart_profiles[i].cart_items[j]._id.toString() == cart_item_id) {
                   cart.cart_profiles[i].cart_items[j].quantity = quantity;
                   cart.cart_profiles[i].cart_items[j].price = quantity * price;
                 }
