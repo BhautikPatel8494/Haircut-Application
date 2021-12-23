@@ -3,7 +3,7 @@ import { Request, Response } from "express";
 import { CurrentUserDto } from "../authentication/authentication.dto";
 import { Public } from "../authentication/guard/public.decorator";
 import { CurrentUser } from "../authentication/guard/user.decorator";
-import { CreateCustomerTransactionDto, FilterDto } from "./home.dto";
+import { CreateCustomerTransactionDto, FilterDto, ServiceListDto } from "./home.dto";
 import { HomeService } from "./home.service";
 
 @Controller('api')
@@ -16,8 +16,8 @@ export class HomeController {
     }
 
     @Post('service-list')
-    async serviceListing(@CurrentUser() user: CurrentUserDto, @Body() filterBody: FilterDto, @Res() res: Response) {
-        return await this.homeService.serviceListing(user, filterBody, res);
+    async serviceListing(@CurrentUser() user: CurrentUserDto, @Body() service: ServiceListDto, @Res() res: Response) {
+        return await this.homeService.serviceListing(user, service, res);
     }
 
     @Public()

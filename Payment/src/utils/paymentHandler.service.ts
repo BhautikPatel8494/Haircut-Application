@@ -61,15 +61,16 @@ export class PaymentHandlerService {
                 apiVersion: '2020-08-27'
             });
             const stripeInfo = await stripeData.customers.create({
-                source: data.userId,
+                source: data.source,
                 email: data.email
-            });
+            });                 
             if (stripeInfo) {
                 return stripeInfo
             } else {
                 throw new BadRequestException('Something went wrong');
             }
         } catch (err) {
+            console.log(`err`, err)
             throw new BadRequestException(err);
         }
     }

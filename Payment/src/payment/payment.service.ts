@@ -312,14 +312,14 @@ export class PaymentService {
         isDefault: false
       }
 
-      let checkFirstCard = await this.userModel.findOne({ _id: userid }).select('email cards');
+      let checkFirstCard = await this.userModel.findOne({ _id: userid }).select('email fullname cards');
       if (checkFirstCard && checkFirstCard.cards.length <= 0) {
         defaultCard = {
           isDefault: true
         }
       }
 
-      const stripeInfo = await this.paymentHandler.createCustomer({ userId: userid.toString(), email: checkFirstCard.email });
+      const stripeInfo = await this.paymentHandler.createCustomer({ source: 'tok_mastercard', email: checkFirstCard.email });
       if (stripeInfo) {
         const createStripeCustomer = {
           type: type,
@@ -403,7 +403,7 @@ export class PaymentService {
       if (checkCardExist && checkCardExist.cards.length > 0) {
         return this.apiResponse.successResponseWithData(res, 'Cards Found!', checkCardExist);
       } else {
-        return this.apiResponse.successResponse(res, 'No Data Found!');
+        return this.apiResponse.successResponseWithData(res, 'No Data Found!', []);
       }
     } catch (e) {
       return this.apiResponse.ErrorResponseWithoutData(res, e.message)

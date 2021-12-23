@@ -3,7 +3,7 @@ import { InjectModel } from "@nestjs/mongoose";
 import { Response } from "express";
 import { Model } from "mongoose";
 
-import { Contact } from "../schema/contact.schema";
+import { Contacts } from "../schema/contact.schema";
 import { ApiResponse } from "../utils/apiResponse.service";
 import { CurrentUserDto } from "../authentication/authentication.dto";
 import { CreateContactDto, DeleteContact } from "./contact.dto";
@@ -11,7 +11,7 @@ import { CreateContactDto, DeleteContact } from "./contact.dto";
 @Injectable()
 export class ContactService {
     constructor(
-        @InjectModel('Contact') private readonly contactModel: Model<Contact>,
+        @InjectModel('Contact') private readonly contactModel: Model<Contacts>,
         private readonly apiResponse: ApiResponse
     ) { }
 

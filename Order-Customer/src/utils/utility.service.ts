@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import axios from 'axios';
@@ -12,43 +12,67 @@ import { Users } from 'src/schema/user.schema';
 import { Configs } from 'src/schema/config.schema';
 import { ServiceProviders } from 'src/schema/serviceProvider.schema';
 import { SendNotification } from './type';
+import { Response } from 'express';
+import { ApiResponse } from './apiResponse.service';
 
 @Injectable()
 export class UtilityService {
   constructor(
-    @InjectModel('serviceProvider') private readonly serviceProviderModel: Model<ServiceProviders>,
-    @InjectModel('order') private readonly orderModel: Model<Orders>,
-    @InjectModel('user') private readonly userModel: Model<Users>,
-    @InjectModel('config') private readonly configModel: Model<Configs>,
-    @InjectModel('notifications') private readonly notificationModel: Model<Notifications>,
+    @InjectModel('ServiceProvider') private readonly serviceProviderModel: Model<ServiceProviders>,
+    @InjectModel('Order') private readonly orderModel: Model<Orders>,
+    @InjectModel('User') private readonly userModel: Model<Users>,
+    @InjectModel('Config') private readonly configModel: Model<Configs>,
+    @InjectModel('Notification') private readonly notificationModel: Model<Notifications>,
+    private readonly apiResponse: ApiResponse,
   ) { }
 
-  async sendNotificationToNearbyStylist(data:SendNotification) {
-    let query;
+  async sendNotificationToNearbyStylist(data: SendNotification, res: Response) {
+    let onlineQuery = [];
+    let offlineQuery = [];
 
     if (data.stylist_id) {
-      query = {
-        $match: {
-          _id: new Types.ObjectId(data.stylist_id),
-          city: data.city,
-          blocked_customer: { $nin: [data.user_id] },
-        },
-      };
+      onlineQuery.push({ $match: { _id: new Types.ObjectId(data.stylist_id), city: data.city, blocked_customer: { $nin: [data.user_id] } } });
     } else {
-      query = {
+      onlineQuery.push({
         $geoNear: {
           near: {
             type: 'Point',
             coordinates: [parseFloat(data.lng), parseFloat(data.lat)],
           },
-          key: 'location',
+          key: 'live_location',
+          query: {
+            online: 1,
+            registration_status: 'accepted',
+            status: true,
+            deleted: false
+          },
           distanceField: 'distance',
           distanceMultiplier: 0.001,
           spherical: true,
         },
-      };
+      });
+
+      offlineQuery.push({
+        $geoNear: {
+          near: {
+            type: 'Point',
+            coordinates: [parseFloat(data.lng), parseFloat(data.lat)],
+          },
+          key: 'register_location',
+          query: {
+            online: 0,
+            registration_status: 'accepted',
+            status: true,
+            deleted: false
+          },
+          distanceField: 'distance',
+          distanceMultiplier: 0.001,
+          spherical: true,
+        },
+      });
     }
-    const user = await this.serviceProviderModel.aggregate([query,
+
+    const resultQuery = [
       {
         $lookup: {
           from: 'orders',
@@ -97,41 +121,53 @@ export class UtilityService {
         },
       },
       { $match: { within: true, orders: { $size: 0 } } },
-    ])
-    if (user.length <= 0) {
+    ];
+
+    onlineQuery = onlineQuery.concat(resultQuery);
+    offlineQuery = offlineQuery.concat(resultQuery);
+
+    const onlineStylists = await this.serviceProviderModel.aggregate(onlineQuery);
+    const offlineStylists = await this.serviceProviderModel.aggregate(offlineQuery);
+    let stylist = onlineStylists.concat(offlineStylists);
+    if (data.stylist_id) {
+      stylist = onlineStylists;
+    }
+    if (stylist.length <= 0) {
       console.log('no stylist nearby');
     }
     let config = await this.configModel.findOne();
     let counter = 0;
-    for (let i = 0; i < user.length; i++) {
-      const orderInfo = await this.orderModel.aggregate([{ $match: { stylist_id: user[i]._id, booking_status: { $in: [1, 2, 3, 5] } } }]); // Only send notification if order is not completed
-      const userInfo = await this.userModel.findOne({ _id: data.user_id, blocked_stylist: { $elemMatch: { stylist_id: user[i]._id, block_status: 'active' } } });
+    for (let i = 0; i < stylist.length; i++) {
+      const result = stylist[i];
+      const orderInfo = await this.orderModel.aggregate([{ $match: { stylist_id: result._id, booking_status: { $in: [1, 2, 3, 5] } } }]); // Only send notification if order is not completed
+      const userInfo = await this.userModel.findOne({ _id: data.user_id, blocked_stylist: { $elemMatch: { stylist_id: result._id, block_status: 'active' } } });
       const juniorArray = ['junior'];
       const seniorArray = ['junior', 'senior'];
-      if (orderInfo.length > 0) {
+
+      if (data.stylist_id && orderInfo.length > 0) {
+        await this.orderModel.deleteOne({ _id: data.order_id });
+        throw new Error('Stylist is have an active order!');
+      } else if (orderInfo.length > 0) {
+        console.log(result, 'Stylist is have an active order!');
       } else if (userInfo) {
-        console.log(user[i], 'this stylist is block listed by customer!');
-      } else if (!data.stylist_id && user[i].online === 0) {
-        // if stylist status is not online
-        // console.log(user[i], 'stylist is not online');
-      } else if (user[i].blocked_customer.length > 0 && user[i].blocked_customer.indexOf(data.user_id) >= 0) {
-        // if user is blocked by stylist
-        console.log(user[i], 'this customer is block listed by stylist');
-      } else if (!data.stylist_id && user[i].experience == 'junior' && !juniorArray.includes(data.stylist_level)) {
-        // console.log(user[i], 'this order not valid for junior stylist');
-      } else if (!data.stylist_id && user[i].experience == 'senior' && !seniorArray.includes(data.stylist_level)) {
-        // console.log(user[i], 'this order not valid for junior and senior stylist');
+        console.log(result, 'this stylist is block listed by customer!');
+      } else if (result.blocked_customer.length > 0 && result.blocked_customer.indexOf(data.user_id) >= 0) {
+        console.log(result, 'this customer is block listed by stylist');
+      } else if (!data.stylist_id && result.experience == 'junior' && !juniorArray.includes(data.stylist_level)) {
+        console.log(result, 'this order not for junior stylist');
+      } else if (!data.stylist_id && result.experience == 'senior' && !seniorArray.includes(data.stylist_level)) {
+        console.log(result, 'this order not for junior and senior stylist');
       } else {
-        let order_type;
-        if (data.booking_type === 'On-Demand Order' || data.booking_type === 'Custom Order') {
+        let order_type = "";
+        if (data.booking_type == 'on-demand' || data.booking_type >= 'custom') {
           order_type = 'on-demand';
-        } else if (data.booking_type === 'Scheduled Order') {
+        } else if (data.booking_type === 'on-scheduled') {
           order_type = 'scheduled';
         }
 
-        let notification = {
+        const notification = {
           notification_type: data.notification_type ? data.notification_type : '',
-          distance: `${user[i].distance}` != 'undefined' ? `${user[i].distance}` : '',
+          distance: `${result.distance}` != 'undefined' ? `${result.distance}` : '',
           date: data.created_at ? data.created_at : '',
           name: data.full_name ? data.full_name : '',
           profile: data.profile ? data.profile : '',
@@ -140,74 +176,73 @@ export class UtilityService {
           order_id: data.order_id ? data.order_id.toString() : '',
         };
 
-        let stylist_notification = {
+        const stylist_notification = {
           user: {
             user_id: data.user_id,
             full_name: data.full_name,
             profile: data.profile ? CUSTOMER_PROFILE + data.profile : '',
           },
-          stylist_id: user[i]._id,
+          stylist_id: result._id,
           message: data.message,
           is_service_request: true,
           type: order_type,
           order_id: data.order_id,
         };
         await this.notificationModel.create(stylist_notification)
-        if (!data.is_custom && data.stylist_id === user[i]._id.toString()) {
-          axios.post(process.env.NOTIFICATION_URL, {
-            receiverId: user[i]._id,
+
+        if (!data.is_custom && data.stylist_id === result._id.toString()) {
+          await axios.post(process.env.NOTIFICATION_URL, {
+            receiverId: result._id,
             notification_type: 'preffered_stylist_confirmation',
             extraData: {
               ...notification,
-              stylist_firstname: user[i].firstname,
-              stylist_lastname: user[i].lastname,
+              stylist_firstname: result.firstname,
+              stylist_lastname: result.lastname,
             },
           });
 
           const expireTime = config.service_request_expiration_duration / 60;
-          const example = 60 / 60;
           const isoDate = moment().add(expireTime, 'minute').toDate();
-          schedule.scheduleJob(isoDate, () => {
-            axios.post(process.env.NOTIFICATION_URL, {
-              receiverId: user[i]._id,
+          schedule.scheduleJob(isoDate, async () => {
+            await axios.post(process.env.NOTIFICATION_URL, {
+              receiverId: result._id,
               notification_type: 'preffered_stylist_request_expired',
               extraData: {
-                stylist_firstname: user[i].firstname,
-                stylist_lastname: user[i].lastname,
+                stylist_firstname: result.firstname,
+                stylist_lastname: result.lastname,
               },
             });
           });
         }
 
-        if (data.is_custom && data.stylist_id === user[i]._id.toString()) {
-          axios.post(process.env.NOTIFICATION_URL, {
-            receiverId: user[i]._id,
+        if (data.is_custom && data.stylist_id === result._id.toString()) {
+          await axios.post(process.env.NOTIFICATION_URL, {
+            receiverId: result._id,
             notification_type: 'direct_stylist_confirmation',
             extraData: {
               ...notification,
-              stylist_firstname: user[i].firstname,
-              stylist_lastname: user[i].lastname,
+              stylist_firstname: result.firstname,
+              stylist_lastname: result.lastname,
             },
           });
 
           const expireTime = config.service_request_expiration_duration / 60;
-          const example = 60 / 60;
           const isoDate = moment().add(expireTime, 'minute').toDate();
-          schedule.scheduleJob(isoDate, () => {
-            axios.post(process.env.NOTIFICATION_URL, {
-              receiverId: user[i]._id,
+          schedule.scheduleJob(isoDate, async () => {
+            await axios.post(process.env.NOTIFICATION_URL, {
+              receiverId: result._id,
               notification_type: 'custom_request_expired',
               extraData: {
-                stylist_firstname: user[i].firstname,
-                stylist_lastname: user[i].lastname,
+                stylist_firstname: result.firstname,
+                stylist_lastname: result.lastname,
               },
             });
           });
         }
 
         if (!data.stylist_id) {
-          axios.post(process.env.NOTIFICATION_URL, {
-            receiverId: user[i]._id,
+          await axios.post(process.env.NOTIFICATION_URL, {
+            receiverId: result._id,
             notification_type: 'order_waiting_confirmation',
             extraData: notification,
           });
@@ -221,16 +256,16 @@ export class UtilityService {
 
     if (!data.stylist_id) {
       const expireTime = config.service_request_expiration_duration / 60;
-      const example = 60 / 60;
       const isoDate = moment().add(expireTime, 'minute').toDate();
-      schedule.scheduleJob(isoDate, () => {
+      schedule.scheduleJob(isoDate, async () => {
         console.log('On Demand Booking Called!!');
-        axios.post(process.env.NOTIFICATION_URL, {
+        await axios.post(process.env.NOTIFICATION_URL, {
           receiverId: data.user_id,
           notification_type: 'on_demand_request_expired',
           extraData: {},
         });
       });
     }
+    return this.apiResponse.successResponse(res, 'Booking created successfully!')
   }
 }

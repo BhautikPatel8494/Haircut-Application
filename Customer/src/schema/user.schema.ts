@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Schema as MongooseSchema } from 'mongoose';
+import { Types } from 'mongoose';
 
 @Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } })
 class FamilyMembers {
@@ -84,7 +84,7 @@ const AddressSchema = SchemaFactory.createForClass(Addresses);
 
 @Schema()
 class BlockStylists {
-  @Prop({ type: MongooseSchema.Types.ObjectId })
+  @Prop({ type: Types.ObjectId })
   stylist_id: string;
 
   @Prop({ type: String })
@@ -106,9 +106,6 @@ const BlockStylistSchema = SchemaFactory.createForClass(BlockStylists);
 class Cards {
   @Prop({ type: String, default: null })
   type: string;
-
-  @Prop({ type: String, default: null })
-  logo: string;
 
   @Prop({ type: String, default: null })
   lastd: string;
@@ -208,9 +205,12 @@ export class Users {
 
   @Prop({ type: Array, default: [] })
   devices: [{
-    device: string;
+    type: string;
     token: string;
   }];
+
+  @Prop({ type: String, default: null })
+  access_token: string;
 
   created_at: string
   updated_at: string

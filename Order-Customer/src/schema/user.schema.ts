@@ -218,6 +218,12 @@ export class Users {
   @Prop({ type: Boolean, default: true })
   status: boolean;
 
+  @Prop({ type: String, default: null })
+  access_token: string;
+
+  @Prop({ type: String, default: null })
+  default_refund_method: string;
+
   @Prop({ type: Array, default: [] })
   devices: [{
     type: string;

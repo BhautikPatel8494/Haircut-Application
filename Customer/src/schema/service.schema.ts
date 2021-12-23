@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Schema as MongooseSchema } from 'mongoose';
+import { Types } from 'mongoose';
 
 @Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }, collection: 'services' })
 export class Services {
@@ -22,18 +22,18 @@ export class Services {
   stylist_type: [];
 
   @Prop({
-    type: MongooseSchema.Types.ObjectId,
+    type: Types.ObjectId,
     ref: 'categories',
     required: true,
   })
-  category_id: MongooseSchema.Types.ObjectId;
+  category_id: string;
 
   @Prop({
-    type: MongooseSchema.Types.ObjectId,
+    type: Types.ObjectId,
     ref: 'categories.sub_categories',
     required: true,
   })
-  subcategory_id: MongooseSchema.Types.ObjectId;
+  subcategory_id: string;
 
   @Prop({ type: Number, default: 0 })
   regular_price: number;
@@ -79,6 +79,9 @@ export class Services {
 
   @Prop({ type: Array, default: [] })
   seo_index: [];
+
+  created_at: string;
+  updated_at: string;
 }
 
 export const ServiceSchema = SchemaFactory.createForClass(Services);

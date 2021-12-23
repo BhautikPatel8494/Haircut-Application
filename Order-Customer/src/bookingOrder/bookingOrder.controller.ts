@@ -11,8 +11,8 @@ export class BookingOrderController {
   constructor(private readonly bookingOrderService: BookingOrderService) { }
 
   @Post('check-stylist-availability')
-  async checkStylistAvailabel(@Body() filterBody: FilterDto, @Res() res: Response) {
-    return await this.bookingOrderService.checkStylistAvailabel(filterBody, res);
+  async checkStylistAvailable(@Body() filterBody: FilterDto, @Res() res: Response) {
+    return await this.bookingOrderService.checkStylistAvailable(filterBody, res);
   }
 
   @Post('create-order')
@@ -31,8 +31,8 @@ export class BookingOrderController {
   }
 
   @Post('cancel-order')
-  async cancleOrder(@Body() cancleOrder: CancleOrderDto, @Res() res: Response) {
-    return await this.bookingOrderService.cancleOrder(cancleOrder, res);
+  async cancleOrder(@CurrentUser() user: CurrentUserDto, @Body() cancleOrder: CancleOrderDto, @Res() res: Response) {
+    return await this.bookingOrderService.cancleOrder(user, cancleOrder, res);
   }
 
   @Post('confirm-otp-start-service')

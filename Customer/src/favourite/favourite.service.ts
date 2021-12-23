@@ -91,18 +91,33 @@ export class FavouriteService {
                 {
                     $project: {
                         _id: 1,
+                        "service._id": 1,
+                        "service.duration": 1,
+                        "service.stylist_type": 1,
+                        "service.description": 1,
+                        "service.regular_price": 1,
+                        "service.sale_price": 1,
+                        "service.quantity": 1,
+                        "service.featured_image": { $concat: [constants.SERVICE_FEATURED_IMAGE, "$service.featured_image"] },
+                        "service.section_image": { $concat: [constants.SERVICE_SECTION_IMAGE, "$service.section_image"] },
                         "service.images": {
                             $map: {
                                 input: "$service.images",
                                 as: "images",
-                                in: { $concat: [constants.SERVICE_IMAGE, "$$images.image"] }
+                                in: { _id: "$$images._id", image: { $concat: [constants.SERVICE_IMAGE, "$$images.image"] } }
                             }
                         },
-                        "service.avg_rating": { $cond: [{ $size: "$ratings" }, { $avg: "$ratings.value" }, 0] },
-                        "service._id": 1,
-                        "service.featured_image": { $concat: [constants.SERVICE_FEATURED_IMAGE, "$service.featured_image"] },
+                        "service.videos": {
+                            $map: {
+                                input: "$service.videos",
+                                as: "videos",
+                                in: { _id: "$$videos._id", image: { $concat: [constants.SERVICE_VIDEO, "$$videos.video"] } }
+                            }
+                        },
+                        "service.status": 1,
                         "service.title": 1,
-                        "service.stylist_type": 1,
+                        "service.available_for":"$service.age_group",
+                        "service.avg_rating": { $cond: [{ $size: "$ratings" }, { $avg: "$ratings.value" }, 0] },
                         "custom_service._id": 1,
                         "custom_service.title": 1,
                         "custom_service.featured_image": "",

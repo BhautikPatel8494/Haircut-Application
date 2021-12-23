@@ -12,6 +12,7 @@ import { FavouriteModule } from './favourite/favourite.module';
 import { RatingModule } from './rating/rating.module';
 import { ContactModule } from './contact/contact.module';
 import { BlockModule } from './block/block.module';
+import { SosModule } from './sos/sos.module';
 config()
 
 @Module({
@@ -28,7 +29,8 @@ config()
     FavouriteModule,
     RatingModule,
     ContactModule,
-    BlockModule
+    BlockModule,
+    SosModule
   ],
   providers: [{
     provide: APP_GUARD,

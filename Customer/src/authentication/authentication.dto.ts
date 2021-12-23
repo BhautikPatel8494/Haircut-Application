@@ -8,6 +8,22 @@ export class CurrentUserDto {
     @IsOptional()
     @IsString()
     _id: string;
+
+    @IsOptional()
+    @IsString()
+    firstname: string;
+
+    @IsOptional()
+    @IsString()
+    lastname: string;
+
+    @IsOptional()
+    @IsString()
+    middlename: string;
+
+    @IsOptional()
+    @IsString()
+    phone_number: string;
 }
 
 export class CreateFamilyMemberDto {

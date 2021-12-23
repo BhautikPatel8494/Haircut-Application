@@ -3,6 +3,7 @@ import { InjectModel } from "@nestjs/mongoose";
 import { Request, Response } from "express";
 import { Model, Types } from "mongoose";
 import * as moment from 'moment'
+import axios from 'axios'
 
 import { Categories } from "../schema/categories.schema";
 import { constants, WEEKDAY_LIST } from '../utils/constant'
@@ -19,7 +20,7 @@ import { Schedules } from "../schema/schedule.schema";
 import { Utility } from "../utils/utility.service";
 import { CustomerTransactions } from "../schema/customerTransaction.schema";
 import { ServiceProviders } from "../schema/serviceProvider.schema";
-import { CreateCustomerTransactionDto, FilterDto } from "./home.dto";
+import { CreateCustomerTransactionDto, FilterDto, ServiceListDto } from "./home.dto";
 import { CurrentUserDto } from "../authentication/authentication.dto";
 
 @Injectable()
@@ -95,9 +96,9 @@ export class HomeService {
     }
 
 
-    async serviceListing(user: CurrentUserDto, filterBody: FilterDto, res: Response) {
+    async serviceListing(user: CurrentUserDto, service: ServiceListDto, res: Response) {
         try {
-            const { category_id, limit, page, subcategory_id, stylist_level, profile_id, age_group } = filterBody;
+            const { category_id, limit, page, subcategory_id, stylist_level, profile_id, age_group } = service;
 
             const pages = page ? page : 1;
             const limits = limit ? limit : 10;
@@ -759,6 +760,7 @@ export class HomeService {
                 const sortFilter = sort ? sort : "avg_rating";
                 let sortingMatchObj = {}
                 let genderMatchObj = {}
+                let stylistLevelMatchObj = {};
                 let ratingMatchObj = {}
                 let nameMatchObj = {}
 
@@ -787,43 +789,118 @@ export class HomeService {
                 if (nameFilter) {
                     nameMatchObj = { $match: { full_name: { $regex: nameFilter, $options: "i" } } }
                 } else {
-                    nameMatchObj = { $match: { online: 1 } }
+                    nameMatchObj = { $match: { online: [0, 1] } }
                 }
 
-                const activeAddress = userInfo.addresses.find(function (elem: { active: boolean }) {
-                    if (elem.active) {
-                        return elem;
-                    }
-                });
+                if (stylistLevel) {
+                    stylistLevelMatchObj = { $match: { experience: stylistLevel } };
+                }
+
+                const activeAddress = userInfo.addresses.find((element) => element.active);
+
+                const blockedStylists = userInfo.blocked_stylist.filter(elem => elem.block_status == "active").map(elem => elem.stylist_id);
 
                 if (activeAddress) {
-                    console.log(activeAddress.lng, activeAddress.lat)
-                    const Query = [];
+                    const preferenceMatch = [];
+                    if (preference.length > 0) {
+                        for (let i = 0; i < preference.length; i++) {
+                            const genderValue = preference[i];
+                            preferenceMatch.push(genderValue)
+                        }
+                    } else {
+                        preferenceMatch.push("men", "women")
+                    }
 
-                    Query.push({
+
+                    let QueryOnline = [];
+                    let QueryOffline = [];
+
+
+                    QueryOnline.push({
                         $geoNear: {
                             near: {
                                 type: "Point",
                                 coordinates: [parseFloat(activeAddress.lng), parseFloat(activeAddress.lat)]
                             },
                             key: "live_location",
-                            distanceField: "distance",
-                            maxDistance: radius * constants.METERS_PER_MILE,
+                            query: {
+                                registration_status: "accepted",
+                                deleted: false,
+                                status: true,
+                                online: 1
+                            },
+                            distanceField: "customer_distance",
+                            //includeLocs: "dist.location",
+                            maxDistance: radius * constants.METERS_PER_MILE, //it will return records in 5 mile
+                            distanceMultiplier: constants.MILES_PER_METER,
                             spherical: true
                         }
                     });
 
-                    Query.push({
-                        $lookup:
-                        {
-                            from: "ratings",
-                            localField: "_id",
-                            foreignField: "stylist_id",
-                            as: "ratings"
+                    QueryOffline.push({
+                        $geoNear: {
+                            near: {
+                                type: "Point",
+                                coordinates: [parseFloat(activeAddress.lng), parseFloat(activeAddress.lat)]
+                            },
+                            key: "register_location",
+                            query: {
+                                registration_status: "accepted",
+                                deleted: false,
+                                status: true,
+                                online: 0
+                            },
+                            distanceField: "customer_distance",
+                            //includeLocs: "dist.location",
+                            maxDistance: radius * constants.METERS_PER_MILE, //it will return records in 5 mile
+                            distanceMultiplier: constants.MILES_PER_METER,
+                            spherical: true
                         }
                     });
 
-                    Query.push(
+                    if (searchFilter && searchFilter != '') {
+                        const QueryText = {
+                            $match: {
+                                full_name: {
+                                    $regex: searchFilter + ".*$",
+                                    $options: "i"
+                                }
+                            }
+                        };
+                        QueryOnline.push(QueryText);
+                        QueryOffline.push(QueryText);
+                    }
+
+                    const matchQuery = [
+                        {
+                            $match: {
+                                $expr: {
+                                    $lte: ["$customer_distance", "$radius"]
+                                }
+                            }
+                        },
+                        {
+                            $match: {
+                                "_id": { $nin: blockedStylists }
+                            }
+                        },
+                        {
+                            $match: {
+                                $expr: {
+                                    $not: {
+                                        $in: [user._id.toString(), "$blocked_customer"]
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            $lookup: {
+                                from: "ratings",
+                                localField: "_id",
+                                foreignField: "stylist_id",
+                                as: "ratings"
+                            }
+                        },
                         {
                             $lookup: {
                                 from: 'orders',
@@ -851,87 +928,62 @@ export class HomeService {
                                 }
                             }
                         },
-                    )
-
-                    if (stylistLevel) {
-                        Query.push({
-                            $match: {
-                                experience: stylistLevel,
-                            }
-                        });
-                    }
-
-                    const gender = [];
-                    if (preference.length > 0) {
-                        for (let i = 0; i < preference.length; i++) {
-                            const genderValue = preference[i];
-                            gender.push(genderValue)
-                        }
-                    } else {
-                        gender.push("men", "women")
-                    }
-
-                    Query.push({
-                        $match: {
-                            gender: { $in: gender }
-                        }
-                    });
-
-                    if (search) {
-                        Query.push({
-                            $match: {
-                                full_name: {
-                                    $regex: search + ".*$",
-                                    $options: "i"
-                                }
-                            }
-                        });
-                    }
-
-                    Query.push({
-                        $project: {
-                            _id: 1,
-                            firstname: 1,
-                            lastname: 1,
-                            middlename: 1,
-                            distance: 1,
-                            online: 1,
-                            experience: 1,
-                            gender: 1,
-                            completed_order_count: {
-                                $cond: ["$completed_orders", { $size: "$completed_orders" }, 0]
-                            },
-                            "stylist_fav_count": { $cond: ["$favs", { $size: "$favs" }, 0] },
-                            "rating_count": { $size: "$ratings" },
-                            "avg_rating": { $cond: [{ $size: "$ratings" }, { $avg: "$ratings.value" }, 0] },
-                            profile: {
-                                $cond: {
-                                    if: { $ne: ["$profile", ""] },
-                                    then: { $concat: [constants.STYLIST_PROFILE, "", "$profile"] },
-                                    else: ""
+                        stylistLevelMatchObj,
+                        {
+                            $match: { gender: { $in: preferenceMatch } }
+                        },
+                        {
+                            $project: {
+                                _id: 1,
+                                firstname: 1,
+                                lastname: 1,
+                                middlename: 1,
+                                live_location: 1,
+                                register_location: 1,
+                                radius: 1,
+                                completed_order_count: {
+                                    $cond: ["$completed_orders", { $size: "$completed_orders" }, 0]
+                                },
+                                "stylist_fav_count": { $cond: ["$favs", { $size: "$favs" }, 0] },
+                                online: 1,
+                                "rating_count": { $size: "$ratings" },
+                                "avg_rating": { $cond: [{ $size: "$ratings" }, { $avg: "$ratings.value" }, 0] },
+                                experience: 1,
+                                gender: 1,
+                                profile: {
+                                    $cond: {
+                                        if: { $ne: ["$profile", ""] },
+                                        then: { $concat: [constants.STYLIST_PROFILE, "", "$profile"] },
+                                        else: ""
+                                    }
                                 }
                             }
                         }
-                    },
-                        { $skip: skip },
-                        { $limit: limits },
-                        nameMatchObj,
-                        genderMatchObj,
-                        sortingMatchObj,
-                        ratingMatchObj
-                    );
+                    ];
 
-                    const stylistInfo = await this.serviceProviderModel.aggregate(Query);
-                    if (stylistInfo.length > 0) {
-                        return this.apiResponse.successResponseWithData(res, "Stylist found successfully", stylistInfo);
-                    } else {
-                        return this.apiResponse.ErrorResponse(res, "Stylist's not found.", {});
+                    QueryOnline = QueryOnline.concat(matchQuery);
+                    QueryOffline = QueryOffline.concat(matchQuery);
+
+                    const onlineStylistInfo = await this.serviceProviderModel.aggregate(QueryOnline);
+                    const offlineStylistInfo = await this.serviceProviderModel.aggregate(QueryOffline);
+
+                    const stylists = onlineStylistInfo.concat(offlineStylistInfo);
+                    if (stylists.length > 0) {
+                        const updatedArray = []
+                        for (let i = 0; i < stylists.length; i++) {
+                            const element = stylists[i];
+                            const result = await axios.get(`https://api.nextbillion.io/directions/json?origin=${element.online ? element.live_location.coordinates[1].toString() : element.register_location.coordinates[1].toString()},${element.online ? element.live_location.coordinates[0].toString() : element.register_location.coordinates[0].toString()}&destination=${activeAddress.lat},${activeAddress.lng}&key=${process.env.NEXT_BILLION_KEY}`)
+                            element.distance = result.data.routes[0].distance * constants.MILES_PER_METER;
+                            element.duration = result.data.routes[0].duration;
+                            updatedArray.push(element);
+                        }
+                        return this.apiResponse.successResponseWithData(res, "Stylist found", updatedArray);
                     }
                 } else {
                     return this.apiResponse.ErrorResponse(res, "No active location found.", {});
                 }
             } else {
-                return this.apiResponse.ErrorResponse(res, "user not found", {});
+                return this.apiResponse.ErrorResponse(res, "User not found", {});
             }
         } catch (err) {
             return this.apiResponse.ErrorResponse(res, err.message, {});
@@ -943,29 +995,30 @@ export class HomeService {
         try {
             const { page, limit, gender_filter, rating_filter, name_filter, stylist_type, sort } = filterBody.body;
 
+            const pages = page ? page : 1
+            const limits = limit ? limit : 10;
+            const skip = (limits * pages) - limits;
+
             const userInfo = await this.userModel.findOne({ _id: user._id, 'addresses.active': true });
             if (userInfo) {
-                const pages = page ? page : 1
-                const limits = limit ? limit : 10;
-                const skip = (limits * pages) - limits;
-
-                const activeAddress = userInfo.addresses.find(elem => elem.active ? elem : null)
-                const blockedStylists = userInfo.blocked_stylist.filter(elem => elem.block_status == "active").map(elem => elem.stylist_id);
                 const config = await this.configModel.findOne({}, { customer_stylist_radius: 1 });
                 const radius = config && config.customer_stylist_radius ? config.customer_stylist_radius : 20
-                if (activeAddress) {
-                    const genderFilter = gender_filter ? gender_filter.split(',') : null;
-                    const nameFilter = name_filter ? name_filter : null;
-                    const stylistTypeFilter = stylist_type ? stylist_type : null;
-                    const sortFilter = sort ? sort : "avg_rating";
-                    const ratingFilter = rating_filter ? parseInt(rating_filter) : 0;
-                    const requestId = filterBody.headers.requestid;
-                    let sortingMatchObj = {}
-                    let genderMatchObj = {}
-                    let ratingMatchObj = {}
-                    let nameMatchObj = {}
-                    let stylistMatchObj = {}
+                const genderFilter = gender_filter ? gender_filter.split(',') : null;
+                const nameFilter = name_filter ? name_filter : null;
+                const stylistTypeFilter = stylist_type ? stylist_type : null;
+                const sortFilter = sort ? sort : "avg_rating";
+                const ratingFilter = rating_filter ? parseInt(rating_filter) : 0;
+                const requestId = filterBody.headers.requestid;
+                let sortingMatchObj = {}
+                let genderMatchObj = {}
+                let ratingMatchObj = {}
+                let nameMatchObj = {}
+                let stylistMatchObj = {}
 
+                const activeAddress = userInfo.addresses.find((element) => element.active)
+                const blockedStylists = userInfo.blocked_stylist.filter(elem => elem.block_status == "active").map(elem => elem.stylist_id);
+
+                if (activeAddress) {
                     if (sortFilter == "avg_rating") {
                         sortingMatchObj = { $sort: { "avg_rating": -1 } };
                     } else if (sortFilter == "most_preferred") {
@@ -991,7 +1044,7 @@ export class HomeService {
                     if (nameFilter) {
                         nameMatchObj = { $match: { full_name: { $regex: nameFilter, $options: "i" } } }
                     } else {
-                        nameMatchObj = { $match: { online: { $in: [0, 1] }} }
+                        nameMatchObj = { $match: { online: { $in: [0, 1] } } }
                     }
 
                     if (ratingFilter === 0) {
@@ -1000,7 +1053,10 @@ export class HomeService {
                         ratingMatchObj = { $match: { avg_rating: { $gte: ratingFilter } } }
                     }
 
-                    const stylistInfo = await this.serviceProviderModel.aggregate([{
+                    let OnlineQuery = [];
+                    let OfflineQuery = [];
+
+                    OnlineQuery.push({
                         $geoNear: {
                             near: {
                                 type: "Point",
@@ -1010,144 +1066,152 @@ export class HomeService {
                             query: {
                                 online: 1,
                                 registration_status: "accepted",
-                                deleted: false,
-                                status: true
+                                status: true,
+                                deleted: false
                             },
                             distanceField: "customer_distance",
-                            // maxDistance: radius * constants.METERS_PER_MILE,
-                            // distanceMultiplier: constants.MILES_PER_METER,
+                            maxDistance: radius * constants.METERS_PER_MILE,
+                            distanceMultiplier: constants.MILES_PER_METER,
                             spherical: true
                         }
-                    },
-                    {
-                        $match: {
-                            $expr: {
-                                $lte: ["$customer_distance", "$radius"]
-                            }
+                    });
+
+                    OfflineQuery.push({
+                        $geoNear: {
+                            near: {
+                                type: "Point",
+                                coordinates: [parseFloat(activeAddress.lng), parseFloat(activeAddress.lat)]
+                            },
+                            key: "register_location",
+                            query: {
+                                online: 0,
+                                registration_status: "accepted",
+                                status: true,
+                                deleted: false
+                            },
+                            distanceField: "customer_distance",
+                            maxDistance: radius * constants.METERS_PER_MILE,
+                            distanceMultiplier: constants.MILES_PER_METER,
+                            spherical: true
                         }
-                    },
-                    {
-                        $match: {
-                            "_id": { $nin: blockedStylists }
-                        }
-                    },
-                    {
-                        $match: {
-                            $expr: {
-                                $not: {
-                                    $in: [String(user._id), "$blocked_customer"]
-                                }
-                            }
-                        }
-                    },
-                        nameMatchObj,
-                        genderMatchObj,
-                        stylistMatchObj,
-                    {
-                        $lookup: {
-                            from: 'ratings',
-                            localField: "_id",
-                            foreignField: "stylist_id",
-                            as: "ratings"
-                        }
-                    },
-                    {
-                        $lookup: {
-                            from: 'orders',
-                            localField: '_id',
-                            foreignField: "stylist_id",
-                            as: "orders"
-                        }
-                    },
-                    {
-                        $lookup: {
-                            from: 'favourites',
-                            localField: '_id',
-                            foreignField: "stylist_id",
-                            as: "favs"
-                        }
-                    },
-                    {
-                        $addFields: {
-                            "completed_orders": {
-                                $filter: {
-                                    input: "$orders",
-                                    as: "order",
-                                    cond: { $eq: ["$$order.booking_status", 4] }
+                    });
+
+                    const matchQuery = [
+                        {
+                            $match: { $expr: { $lte: ["$customer_distance", "$radius"] } }
+                        },
+                        {
+                            $match: { "_id": { $nin: blockedStylists } }
+                        },
+                        {
+                            $match: {
+                                $expr: {
+                                    $not: {
+                                        $in: [user._id.toString(), "$blocked_customer"]
+                                    }
                                 }
                             }
                         },
-                    },
-                    {
-                        $project: {
-                            _id: 1,
-                            firstname: 1,
-                            lastname: 1,
-                            middlename: 1,
-                            live_location: 1,
-                            radius: 1,
-                            completed_order_count: {
-                                $cond: ["$completed_orders", { $size: "$completed_orders" }, 0]
+                        nameMatchObj,
+                        genderMatchObj,
+                        stylistMatchObj,
+                        {
+                            $lookup: {
+                                from: 'ratings',
+                                localField: "_id",
+                                foreignField: "stylist_id",
+                                as: "ratings"
+                            }
+                        },
+                        {
+                            $lookup: {
+                                from: 'orders',
+                                localField: '_id',
+                                foreignField: "stylist_id",
+                                as: "orders"
+                            }
+                        },
+                        {
+                            $lookup: {
+                                from: 'favourites',
+                                localField: '_id',
+                                foreignField: "stylist_id",
+                                as: "favs"
+                            }
+                        },
+                        {
+                            $addFields: {
+                                "completed_orders": {
+                                    $filter: {
+                                        input: "$orders",
+                                        as: "order",
+                                        cond: { $eq: ["$$order.booking_status", 4] }
+                                    }
+                                }
                             },
-                            "stylist_fav_count": { $cond: ["$favs", { $size: "$favs" }, 0] },
-                            online: 1,
-                            "rating_count": { $size: "$ratings" },
-                            "avg_rating": { $cond: [{ $size: "$ratings" }, { $avg: "$ratings.value" }, 0] },
-                            experience: 1,
-                            gender: 1,
-                            profile: {
-                                $cond: {
-                                    if: { $ne: ["$profile", ""] },
-                                    then: { $concat: [constants.STYLIST_PROFILE, "", "$profile"] },
-                                    else: ""
+                        },
+                        {
+                            $project: {
+                                _id: 1,
+                                firstname: 1,
+                                lastname: 1,
+                                middlename: 1,
+                                live_location: 1,
+                                radius: 1,
+                                completed_order_count: {
+                                    $cond: ["$completed_orders", { $size: "$completed_orders" }, 0]
+                                },
+                                "stylist_fav_count": { $cond: ["$favs", { $size: "$favs" }, 0] },
+                                online: 1,
+                                "rating_count": { $size: "$ratings" },
+                                "avg_rating": { $cond: [{ $size: "$ratings" }, { $avg: "$ratings.value" }, 0] },
+                                experience: 1,
+                                gender: 1,
+                                profile: {
+                                    $cond: {
+                                        if: { $ne: ["$profile", ""] },
+                                        then: { $concat: [constants.STYLIST_PROFILE, "", "$profile"] },
+                                        else: ""
+                                    }
                                 }
                             }
-                        }
-                    },
+                        },
+                        { $skip: skip },
+                        { $limit: limits },
                         sortingMatchObj,
                         ratingMatchObj
-                        // {$skip: skip},
-                        // {$limit: limit}
-                    ])
+                    ]
 
-                    if (stylistInfo.length > 0) {
-                        // let actievStylistInfo = await Promise.all(stylistInfo.map(async (stylist: UserDto) => {
-                        //     return new Promise((resolve, reject) => {
-                        //         axios.get("https://api.nextbillion.io/directions/json?origin=" + stylist.location.coordinates[1] + "," + stylist.location.coordinates[0] + "&destination=" + activeAddress.lat + "," + activeAddress.lng + "&key=" + process.env.NEXT_BILLION_KEY).then((response) => {
-                        //             stylist.distance = response.data.routes[0].distance * constants.MILES_PER_METER;
-                        //             resolve(stylist);
-                        //         }, (error) => {
-                        //             console.log(error.response.data);
-                        //             stylist.distance = null;
-                        //             resolve(stylist);
-                        //         });
-                        //     })
-                        // }))
+                    OnlineQuery = OnlineQuery.concat(matchQuery);
+                    OfflineQuery = OfflineQuery.concat(matchQuery);
 
-                        // const actievStylistdetails: any = actievStylistInfo.filter((stylist: { distance: number, radius: number }) => stylist.distance != null && stylist.distance <= stylist.radius ? stylist : null);
+                    const onlineStylistInfo = await this.serviceProviderModel.aggregate(OnlineQuery);
+                    const offlineStylistInfo = await this.serviceProviderModel.aggregate(OfflineQuery);
 
-                        let stylistArr = [];
-                        for (let i = 0; i < stylistInfo.length; i++) {
-                            if (stylistInfo[i].experience === 'senior') {
-                                stylistArr.push(stylistInfo[i])
-                            }
-                            if (stylistInfo[i].experience === 'advanced') {
-                                stylistArr.push(stylistInfo[i])
-                            }
+                    const stylists = onlineStylistInfo.concat(offlineStylistInfo);
+
+                    if (stylists.length > 0) {
+                        const updatedArray = []
+                        for (let i = 0; i < stylists.length; i++) {
+                            const element = stylists[i];
+                            const result = await axios.get(`https://api.nextbillion.io/directions/json?origin=${element.online ? element.live_location.coordinates[1].toString() : element.register_location.coordinates[1].toString()},${element.online ? element.live_location.coordinates[0].toString() : element.register_location.coordinates[0].toString()}&destination=${activeAddress.lat},${activeAddress.lng}&key=${process.env.NEXT_BILLION_KEY}`)
+                            element.distance = result.data.routes[0].distance * constants.MILES_PER_METER;
+                            element.duration = result.data.routes[0].duration;
+                            updatedArray.push(element);
                         }
 
                         let paginatedResult = {};
                         if (requestId) {
                             res.status(200)
                             res.setHeader("requestId", requestId)
-                            res.json({ status: 200, message: "Active stylist found successfully.", data: stylistArr })
+                            res.json({ status: 200, message: "Active stylist found successfully.", data: updatedArray })
                             return res
                         }
 
                         if (pages) {
-                            paginatedResult = { totalPage: Math.ceil(stylistArr.length / limits), currentPage: stylistArr.length > 0 ? pages : 0, result: stylistArr }
+                            paginatedResult = { totalPage: Math.ceil(updatedArray.length / limits), currentPage: updatedArray.length > 0 ? pages : 0, result: updatedArray }
                         } else {
-                            paginatedResult = { totalPage: Math.ceil(stylistArr.length / limits), result: stylistArr }
+                            paginatedResult = { totalPage: Math.ceil(updatedArray.length / limits), result: updatedArray }
                         }
                         return res.status(200).json({ status: 200, message: "Active stylist found successfully.", data: paginatedResult });
                     } else {
@@ -1188,58 +1252,83 @@ export class HomeService {
                 let nameMatchObj = {};
                 let sortingMatchObj = {}
 
-                const activeAddress = userInfo.addresses.find(elem => elem.active ? elem : null);
+                const activeAddress = userInfo.addresses.find((element) => element.active);
                 const blockedStylists = userInfo.blocked_stylist.filter(elem => elem.block_status == "active").map(elem => elem.stylist_id);
 
-                if (stylistTypeFilter) {
-                    stylistTypeMatchObj = { $match: { experience: { $in: [stylistTypeFilter] } } }
-                } else {
-                    stylistTypeMatchObj = { $match: { experience: { $in: ['advanced', 'senior'] } } }
-                }
-
-                if (genderFilter && genderFilter.length) {
-                    genderMatchObj = { $match: { gender: { $in: [genderFilter] } } };
-                } else {
-                    genderMatchObj = { $match: { gender: { $in: ["men", "women"] } } };
-                }
-
-                if (nameFilter) {
-                    nameMatchObj = { $match: { full_name: { $regex: nameFilter, $options: "i" } } }
-                } else {
-                    nameMatchObj = { $match: { online: 1 } }
-                }
-
-                if (sortFilter == "avg_rating") {
-                    sortingMatchObj = { $sort: { "avg_rating": -1 } };
-                } else if (sortFilter == "most_preferred") {
-                    sortingMatchObj = { $sort: { "stylist_fav_count": -1 } };
-                } else if (sortFilter == "completed_services") {
-                    sortingMatchObj = { $sort: { "completed_order_count": -1 } };
-                } else {
-                    sortingMatchObj = { $sort: { "avg_rating": -1 } };
-                }
-
                 if (activeAddress) {
-                    const stylistInfo = await this.serviceProviderModel.aggregate([
-                        {
-                            $geoNear: {
-                                near: {
-                                    type: "Point",
-                                    coordinates: [parseFloat(activeAddress.lng), parseFloat(activeAddress.lat)]
-                                },
-                                key: "live_location",
-                                query: {
-                                    online: 1,
-                                    registration_status: "accepted",
-                                    deleted: false,
-                                    status: true
-                                },
-                                distanceField: "customer_distance",
-                                maxDistance: radius * constants.METERS_PER_MILE,
-                                distanceMultiplier: constants.MILES_PER_METER,
-                                spherical: true
-                            }
-                        },
+                    if (sortFilter == "avg_rating") {
+                        sortingMatchObj = { $sort: { "avg_rating": -1 } };
+                    } else if (sortFilter == "most_preferred") {
+                        sortingMatchObj = { $sort: { "stylist_fav_count": -1 } };
+                    } else if (sortFilter == "completed_services") {
+                        sortingMatchObj = { $sort: { "completed_order_count": -1 } };
+                    } else {
+                        sortingMatchObj = { $sort: { "avg_rating": -1 } };
+                    }
+
+                    if (stylistTypeFilter) {
+                        stylistTypeMatchObj = { $match: { experience: { $in: [stylistTypeFilter] } } }
+                    } else {
+                        stylistTypeMatchObj = { $match: { experience: { $in: ['advanced', 'senior'] } } }
+                    }
+
+                    if (genderFilter && genderFilter.length) {
+                        genderMatchObj = { $match: { gender: { $in: [genderFilter] } } };
+                    } else {
+                        genderMatchObj = { $match: { gender: { $in: ["men", "women"] } } };
+                    }
+
+                    if (nameFilter) {
+                        nameMatchObj = { $match: { full_name: { $regex: nameFilter, $options: "i" } } }
+                    } else {
+                        nameMatchObj = { $match: { online: 1 } }
+                    }
+
+
+                    let onlineQuery = [];
+                    let offlineQuery = [];
+
+                    onlineQuery.push({
+                        $geoNear: {
+                            near: {
+                                type: "Point",
+                                coordinates: [parseFloat(activeAddress.lng), parseFloat(activeAddress.lat)]
+                            },
+                            key: "live_location",
+                            query: {
+                                online: 1,
+                                registration_status: "accepted",
+                                status: true,
+                                deleted: false
+                            },
+                            distanceField: "customer_distance",
+                            maxDistance: radius * constants.METERS_PER_MILE,
+                            distanceMultiplier: constants.MILES_PER_METER,
+                            spherical: true
+                        }
+                    });
+
+                    offlineQuery.push({
+                        $geoNear: {
+                            near: {
+                                type: "Point",
+                                coordinates: [parseFloat(activeAddress.lng), parseFloat(activeAddress.lat)]
+                            },
+                            key: "register_location",
+                            query: {
+                                online: 0,
+                                registration_status: "accepted",
+                                status: true,
+                                deleted: false
+                            },
+                            distanceField: "customer_distance",
+                            maxDistance: radius * constants.METERS_PER_MILE,
+                            distanceMultiplier: constants.MILES_PER_METER,
+                            spherical: true
+                        }
+                    });
+
+                    const matchQuery = [
                         {
                             $match: {
                                 $expr: {
@@ -1324,44 +1413,33 @@ export class HomeService {
                                     }
                                 }
                             }
-                        }
-                        //{$skip: skip},
-                        //{$limit: limit}
-                    ]);
+                        },
+                        { $skip: skip },
+                        { $limit: limit }
+                    ];
 
-                    if (stylistInfo.length > 0) {
-                        // const activeStylistInfo = await Promise.all(stylistInfo.map(async (stylist) => {
-                        //     return new Promise((resolve, reject) => {
-                        //         axios.get("https://api.nextbillion.io/directions/json?origin=" + stylist.location.coordinates[1] + "," + stylist.location.coordinates[0] + "&destination=" + activeAddress.lat + "," + activeAddress.lng + "&key=" + process.env.NEXT_BILLION_KEY).then((response) => {
-                        //             stylist.distance = response.data.routes[0].distance * constants.MILES_PER_METER;
-                        //             stylist.duration = response.data.routes[0].duration;
-                        //             resolve(stylist);
-                        //         }, (error) => {
-                        //             console.log(error);
-                        //             stylist.distance = null;
-                        //             stylist.duration = null;
-                        //             resolve(stylist);
-                        //         })
-                        //     })
-                        // }))
+                    onlineQuery = onlineQuery.concat(matchQuery);
+                    offlineQuery = offlineQuery.concat(matchQuery);
 
-                        // const actievStylistdetails: any = activeStylistInfo.filter((stylist: { duration: number, distance: number, radius: number }) => stylist.duration != null && stylist.distance != null && stylist.duration <= 45 && stylist.distance <= stylist.radius);
+                    const onlineStylists = await this.serviceProviderModel.aggregate(onlineQuery);
+                    const offlineStylists = await this.serviceProviderModel.aggregate(offlineQuery);
+                    const stylists = onlineStylists.concat(offlineStylists);
 
-                        let stylistArr = [];
-                        for (let i = 0; i < stylistInfo.length; i++) {
-                            if (stylistInfo[i].experience === 'senior') {
-                                stylistArr.push(stylistInfo[i])
-                            }
-                            if (stylistInfo[i].experience === 'advanced') {
-                                stylistArr.push(stylistInfo[i])
-                            }
+                    if (stylists.length > 0) {
+                        const updatedArray = []
+                        for (let i = 0; i < stylists.length; i++) {
+                            const element = stylists[i];
+                            const result = await axios.get(`https://api.nextbillion.io/directions/json?origin=${element.online ? element.live_location.coordinates[1].toString() : element.register_location.coordinates[1].toString()},${element.online ? element.live_location.coordinates[0].toString() : element.register_location.coordinates[0].toString()}&destination=${activeAddress.lat},${activeAddress.lng}&key=${process.env.NEXT_BILLION_KEY}`)
+                            element.distance = result.data.routes[0].distance * constants.MILES_PER_METER;
+                            element.duration = result.data.routes[0].duration;
+                            updatedArray.push(element)
                         }
 
                         let paginatedResult = {};
                         if (pages) {
-                            paginatedResult = { totalPage: Math.ceil(stylistArr.length / limits), currentPage: stylistArr.length > 0 ? pages : 0, result: stylistArr }
+                            paginatedResult = { totalPage: Math.ceil(updatedArray.length / limits), currentPage: updatedArray.length > 0 ? pages : 0, result: updatedArray }
                         } else {
-                            paginatedResult = { totalPage: Math.ceil(stylistArr.length / limits), result: stylistArr }
+                            paginatedResult = { totalPage: Math.ceil(updatedArray.length / limits), result: updatedArray }
                         }
                         return this.apiResponse.successResponseWithData(res, "Active stylist found successfully.", paginatedResult);
                     } else {
@@ -1559,33 +1637,62 @@ export class HomeService {
         try {
             const { lng, lat } = filterBody.body;
 
-            const latitude = lat ? lat : 0;
-            const longitude = lng ? lng : 0;
+            let onlineQuery = [];
+            let offlineQuery = [];
 
-            const stylistInfo = await this.serviceProviderModel.aggregate([
-                {
-                    $geoNear: {
-                        near: {
-                            type: "Point",
-                            coordinates: [parseFloat(longitude), parseFloat(latitude)]
-                        },
-                        key: "live_location",
-                        query: {
-                            registration_status: "accepted",
-                            deleted: false,
-                            status: true
-                        },
-                        distanceField: "distance",
-                        maxDistance: 1000,
-                        spherical: true
-                    }
-                },
+            onlineQuery.push({
+                $geoNear: {
+                    near: {
+                        type: "Point",
+                        coordinates: [parseFloat(lng), parseFloat(lat)]
+                    },
+                    key: "live_location",
+                    query: {
+                        online: 1,
+                        registration_status: "accepted",
+                        deleted: false,
+                        status: true
+                    },
+                    distanceField: "distance",
+                    maxDistance: 1000,
+                    spherical: true
+                }
+            });
+
+            offlineQuery.push({
+                $geoNear: {
+                    near: {
+                        type: "Point",
+                        coordinates: [parseFloat(lng), parseFloat(lat)]
+                    },
+                    key: "register_location",
+                    query: {
+                        online: 1,
+                        registration_status: "accepted",
+                        deleted: false,
+                        status: true
+                    },
+                    distanceField: "distance",
+                    maxDistance: 1000,
+                    spherical: true
+                }
+            });
+
+            const resultQuery = [
                 {
                     $project: {
                         _id: 1,
                     }
                 }
-            ]);
+            ];
+
+            onlineQuery = onlineQuery.concat(resultQuery);
+            offlineQuery = onlineQuery.concat(resultQuery);
+
+            const onlineStylists = await this.serviceProviderModel.aggregate(onlineQuery);
+            const offlineStylists = await this.serviceProviderModel.aggregate(offlineQuery);
+
+            const stylistInfo = onlineStylists.concat(offlineStylists);
             if (stylistInfo.length > 0) {
                 return this.apiResponse.successResponseWithData(res, "Stylist found successfully", { stylist_count: stylistInfo.length > 0 ? stylistInfo.length : 0 })
             } else {
@@ -1709,23 +1816,23 @@ export class HomeService {
 
             const transactionTypeFilter = transaction_type ? transaction_type : "";
             let transactionTypeMatchObj = {};
-            let query = {};
+            let matchQueryObj = {};
 
             const walletBalance = await this.userModel.findOne({ _id: user._id }, { wallet_balance: 1 });
             if (from_date && to_date) {
-                query = { user_id: new Types.ObjectId(user._id), created_at: { $gte: new Date(from_date.toString()), $lte: new Date(to_date.toString()) } }
+                matchQueryObj = { user_id: new Types.ObjectId(user._id), created_at: { $gte: from_date.toString(), $lte: to_date.toString() } }
             } else {
-                query = { user_id: new Types.ObjectId(user._id) }
+                matchQueryObj = { user_id: new Types.ObjectId(user._id) }
             }
 
             if (transactionTypeFilter) {
                 transactionTypeMatchObj = { $match: { type: { $in: [transactionTypeFilter] } } }
             } else {
-                transactionTypeMatchObj = { $match: { user_id: new Types.ObjectId(user._id), type: { $in: ["other", "card-refund", "refund", "reward", "order-deduction"] } } }
+                transactionTypeMatchObj = { $match: { type: { $in: ["other", "card-refund", "refund", "reward", "order-deduction"] } } }
             }
 
             const transactionDetails = await this.customerTransactionModel.aggregate([
-                { $match: query },
+                { $match: matchQueryObj },
                 transactionTypeMatchObj,
                 {
                     $addFields: {
@@ -1861,7 +1968,6 @@ export class HomeService {
             }
             return this.apiResponse.successResponseWithData(res, 'Record found', responseObj)
         } catch (e) {
-            console.log(`e`, e)
             return this.apiResponse.ErrorResponse(res, e.message, []);
         }
     }
@@ -1892,7 +1998,7 @@ export class HomeService {
                 },
                 { $skip: skip },
                 { $limit: limits },
-                { $sort: { _id: -1 } },
+                { $sort: { created_at: -1 } },
             ])
 
             if (customerTransactionInfo.length > 0) {

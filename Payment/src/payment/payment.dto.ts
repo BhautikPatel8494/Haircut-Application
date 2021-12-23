@@ -23,7 +23,7 @@ export class CreateChargeDto {
 export class CreateCustomerDto {
     @IsOptional()
     @IsString()
-    userId: string;
+    source: string;
 
     @IsOptional()
     @IsString()

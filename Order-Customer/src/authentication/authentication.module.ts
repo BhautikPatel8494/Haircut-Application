@@ -8,7 +8,7 @@ import { UserSchema } from 'src/schema/user.schema';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: 'user', schema: UserSchema }]),
+    MongooseModule.forFeature([{ name: 'User', schema: UserSchema }]),
     PassportModule.register({ defaultStrategy: 'jwt', session: false }),
     JwtModule.registerAsync({
       useFactory: () => {

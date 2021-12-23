@@ -1,4 +1,4 @@
-import { IsNumber, IsOptional, IsString } from "class-validator";
+import { IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator";
 
 export class CreateCustomerTransactionDto {
     @IsOptional()
@@ -96,4 +96,42 @@ export class FilterDto {
     @IsOptional()
     @IsString()
     rating_filter: string;
+}
+
+export class ServiceListDto {
+    @IsOptional()
+    @IsNumber()
+    limit: number;
+
+    @IsOptional()
+    @IsNumber()
+    page: number;
+
+    @IsOptional()
+    @IsString()
+    category_id: string;
+
+    @IsOptional()
+    @IsString()
+    age_group: string;
+
+    @IsNotEmpty()
+    @IsString()
+    profile_id: string;
+
+    @IsNotEmpty()
+    @IsString()
+    country: string;
+
+    @IsNotEmpty()
+    @IsString()
+    state_code: string;
+
+    @IsOptional()
+    @IsString()
+    subcategory_id: string;
+
+    @IsOptional()
+    @IsString()
+    stylist_level: string;
 }
