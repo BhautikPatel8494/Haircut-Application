@@ -1,8 +1,8 @@
 import { Injectable } from "@nestjs/common";
 import * as fs from "fs";
 import * as AWS from "aws-sdk";
+
 import { KID_AGE, SENIOR_AGE } from "./constant";
-import { MailerService } from "@nestjs-modules/mailer";
 
 const s3 = new AWS.S3({
     accessKeyId: process.env.AWS_ACCESS_KEY,

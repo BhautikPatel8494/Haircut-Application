@@ -1,14 +1,14 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Schema as MongooseSchema } from 'mongoose';
+import { Types } from 'mongoose';
 
 @Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }, collection: 'secondary_locations' })
 export class SecondaryLocations {
     @Prop({
-        type: MongooseSchema.Types.ObjectId,
+        type: Types.ObjectId,
         ref: 'locations',
         required: true,
     })
-    parent_location_id: MongooseSchema.Types.ObjectId;
+    parent_location_id: string;
 
     @Prop({ type: String, required: true })
     location_name: string;

@@ -4,10 +4,10 @@ import { Types } from 'mongoose';
 @Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }, collection: 'customer_transactions' })
 export class CustomerTransactions {
   @Prop({ type: Types.ObjectId, required: true })
-  user_id: Types.ObjectId;
+  user_id: string;
 
   @Prop({ type: Types.ObjectId })
-  order_id: Types.ObjectId;
+  order_id: string;
 
   @Prop({ type: Number, default: 0 })
   amount: number;

@@ -26,14 +26,14 @@ export class Services {
     ref: 'categories',
     required: true,
   })
-  category_id: Types.ObjectId;
+  category_id: string;
 
   @Prop({
     type: Types.ObjectId,
     ref: 'categories.sub_categories',
     required: true,
   })
-  subcategory_id: Types.ObjectId;
+  subcategory_id: string;
 
   @Prop({ type: Number, default: 0 })
   regular_price: number;

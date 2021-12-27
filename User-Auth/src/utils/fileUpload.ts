@@ -1,4 +1,3 @@
-import { extname } from "path";
 import { diskStorage } from "multer";
 
 export const editFileName = (req, file, cb) => {

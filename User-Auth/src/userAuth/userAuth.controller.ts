@@ -2,13 +2,12 @@ import { Body, Controller, Post, Res, UploadedFiles, UseInterceptors } from "@ne
 import { AnyFilesInterceptor } from "@nestjs/platform-express";
 import { Response } from "express";
 
-import { storage } from "src/utils/fileUpload";
+import { storage } from "../utils/fileUpload";
 import { AdminForgotPasswordDto, AdminLoginDto, AdminRegisterDto, AdminResetPasswordDto, AdminVerifyDto, CheckStylistStatusDto, CheckUserStatusDto, CustomerLoginDto, CustomerLoginWithPassword, CustomerRegisterDto, CustomerVerifyOTPConfirmDto, EnableDisableAdminDto, EnableDisableCustomerDto, EnableDisableStylistDto, StylistCheckPhoneNumberDto, StylistLoginDto, StylistRegisterDto, StylistVerifyOTPConfirmDto } from "./userAuth.dto";
 import { UserAuthService } from "./userAuth.service";
 
 @Controller("api")
-
-export class UsertAuthController {
+export class UserAuthController {
     constructor(private readonly userAuthService: UserAuthService) { }
 
     @Post("register")
@@ -79,27 +78,27 @@ export class UsertAuthController {
     }
 
     @Post('a-reset-password')
-    async adminResetPassword(@Body() resetPasswordAdmin: AdminResetPasswordDto, @Res() res: Response){
-        return await this.userAuthService.adminResetPassword(resetPasswordAdmin,res)
+    async adminResetPassword(@Body() resetPasswordAdmin: AdminResetPasswordDto, @Res() res: Response) {
+        return await this.userAuthService.adminResetPassword(resetPasswordAdmin, res)
     }
 
     @Post('enable-disable-admin')
-    async enableDisableAdmin(@Body() adminDetail: EnableDisableAdminDto, @Res() res: Response){
-        return await this.userAuthService.enableDisableAdmin(adminDetail,res)
+    async enableDisableAdmin(@Body() adminDetail: EnableDisableAdminDto, @Res() res: Response) {
+        return await this.userAuthService.enableDisableAdmin(adminDetail, res)
     }
 
     @Post('enable-disable-stylist')
-    async enableDisableStylist(@Body() stylistDetail: EnableDisableStylistDto, @Res() res: Response){
-        return await this.userAuthService.enableDisableStylist(stylistDetail,res)
+    async enableDisableStylist(@Body() stylistDetail: EnableDisableStylistDto, @Res() res: Response) {
+        return await this.userAuthService.enableDisableStylist(stylistDetail, res)
     }
 
     @Post('enable-disable-customer')
-    async enableDisableCustomer(@Body() customerDetail: EnableDisableCustomerDto, @Res() res: Response){
-        return await this.userAuthService.enableDisableCustomer(customerDetail,res)
+    async enableDisableCustomer(@Body() customerDetail: EnableDisableCustomerDto, @Res() res: Response) {
+        return await this.userAuthService.enableDisableCustomer(customerDetail, res)
     }
-    
+
     @Post("authorize")
-    async checkUserStatus(@Body() checkStatus: CheckUserStatusDto, @Res() res: Response){
-        return await this.userAuthService.checkUserStatus(checkStatus,res)
+    async checkUserStatus(@Body() checkStatus: CheckUserStatusDto, @Res() res: Response) {
+        return await this.userAuthService.checkUserStatus(checkStatus, res)
     }
 }

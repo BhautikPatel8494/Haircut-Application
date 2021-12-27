@@ -14,14 +14,14 @@ export class CustomServices {
     ref: 'service_providers',
     required: true,
   })
-  stylist_id: Types.ObjectId;
+  stylist_id: string;
 
   @Prop({
     type: Types.ObjectId,
     ref: 'categories',
     required: true,
   })
-  category_id: Types.ObjectId;
+  category_id: string;
 
   @Prop({ type: Number, default: 0 })
   regular_price: number;

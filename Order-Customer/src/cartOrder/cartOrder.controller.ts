@@ -1,10 +1,10 @@
 import { Body, Controller, Get, Post, Res } from '@nestjs/common';
 import { Response } from 'express';
 
-import { CurrentUser } from 'src/authentication/gaurd/user.decorator';
+import { CurrentUser } from '../authentication/gaurd/user.decorator';
 import { CartOrderService } from './cartOrder.service';
 import { AddServiceToCartDto, UpdateCartItemDto } from './cartOrder.dto';
-import { CurrentUserDto } from 'src/authentication/authentication.dto';
+import { CurrentUserDto } from '../authentication/authentication.dto';
 
 @Controller('api')
 export class CartOrderController {
@@ -12,7 +12,7 @@ export class CartOrderController {
 
   @Post('add-service-to-cart')
   async addServiceToCart(@CurrentUser() user: CurrentUserDto, @Body() addCartBody: AddServiceToCartDto, @Res() res: Response) {
-    return await this.cartOrderService.addServiceToCart(addCartBody, user, res);
+    return await this.cartOrderService.addServiceToCart(user, addCartBody, res);
   }
 
   @Get('get-cart')

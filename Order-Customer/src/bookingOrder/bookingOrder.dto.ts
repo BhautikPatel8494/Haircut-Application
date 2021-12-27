@@ -29,7 +29,7 @@ export class ChangeStatusDto {
 
     @IsNumber()
     @IsOptional()
-    status: string;
+    status: number;
 }
 
 export class ConfirmOtpServiceDto {
@@ -41,9 +41,9 @@ export class ConfirmOtpServiceDto {
     @IsOptional()
     stylist_id: string;
 
-    @IsString()
+    @IsNumber()
     @IsOptional()
-    otp: string;
+    otp: number;
 }
 
 export class CreateOrderDto {

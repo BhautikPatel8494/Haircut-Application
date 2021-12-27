@@ -119,7 +119,6 @@ export class StylistRegisterDto {
 }
 
 export class StylistLoginDto {
-
     @IsNotEmpty()
     @IsString()
     phone_number: string
@@ -128,16 +127,19 @@ export class StylistLoginDto {
     @IsString()
     country_code: string
 
-    @IsNotEmpty()
     @IsOptional()
+    @IsString()
     hash: string
 }
 
 export class StylistVerifyOTPConfirmDto {
+    @IsNotEmpty()
+    @IsNumber()
+    token: number
 
     @IsNotEmpty()
-    @IsString()
-    phone_number: string
+    @IsNumber()
+    phone_number: number
 
     @IsNotEmpty()
     @IsString()
@@ -147,7 +149,7 @@ export class StylistVerifyOTPConfirmDto {
     @IsString()
     device_token: string
 
-    @IsOptional()
+    @IsNotEmpty()
     @IsString()
     device_type: string
 
@@ -155,7 +157,7 @@ export class StylistVerifyOTPConfirmDto {
     @IsString()
     player_id: string
 
-    @IsNotEmpty()
+    @IsOptional()
     @IsArray()
     tags: [];
 }
@@ -255,18 +257,17 @@ export class CustomerLoginDto {
 
 }
 export class CustomerVerifyOTPConfirmDto {
+    @IsNotEmpty()
+    @IsNumber()
+    token: number
 
     @IsNotEmpty()
-    @IsString()
-    phone_number: string
+    @IsNumber()
+    phone_number: number
 
     @IsNotEmpty()
     @IsString()
     country_code: string
-
-    @IsNotEmpty()
-    @IsString()
-    token: string
 
     @IsOptional()
     @IsString()
@@ -395,9 +396,9 @@ export class EnableDisableCustomerDto {
 
 export class CheckUserStatusDto {
 
-    @IsOptional()
-    @IsString()
-    user_type: string
+    @IsNotEmpty()
+    @IsNumber()
+    user_type: number
 
     @IsOptional()
     @IsEmail()

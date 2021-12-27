@@ -3,17 +3,17 @@ import { JwtModule } from "@nestjs/jwt";
 import { MongooseModule } from "@nestjs/mongoose";
 import { PassportModule } from "@nestjs/passport";
 
-import { ServiceProviderSchema } from "src/schema/serviceProvider.schema";
-import { ApiResponse } from "src/utils/apiResponse.service";
-import { UtilityService } from "src/utils/utlity.service";
-import { UsertAuthController } from "./userAuth.controller";
+import { UserAuthController } from "./userAuth.controller";
 import { UserAuthService } from "./userAuth.service";
-import { TempOtpSchema } from "src/schema/tempOtp.schema";
-import { ConnectedAccountSchema } from "src/schema/connectedAccount.schema";
-import { UserSchema } from "src/schema/user.schema";
-import { AdminSchema } from "src/schema/admin.schema";
-import { SendMail } from "src/utils/sendMail.service";
-import { CountriesWithCodeSchema } from "src/schema/countriesWithCode.schema";
+import { ApiResponse } from "../utils/apiResponse.service";
+import { UtilityService } from "../utils/utlity.service";
+import { SendMail } from "../utils/sendMail.service";
+import { ServiceProviderSchema } from "../schema/serviceProvider.schema";
+import { CountriesWithCodeSchema } from "../schema/countriesWithCode.schema";
+import { UserSchema } from "../schema/user.schema";
+import { AdminSchema } from "../schema/admin.schema";
+import { TempOtpSchema } from "../schema/tempOtp.schema";
+import { ConnectedAccountSchema } from "../schema/connectedAccount.schema";
 
 @Module({
     imports: [
@@ -24,14 +24,14 @@ import { CountriesWithCodeSchema } from "src/schema/countriesWithCode.schema";
             signOptions: { expiresIn: '24h' }
         }),
         MongooseModule.forFeature([
-            { name: 'serviceProvider', schema: ServiceProviderSchema },
-            { name: 'countriesWithCodes', schema: CountriesWithCodeSchema },
-            { name: 'tempOtp', schema: TempOtpSchema },
-            { name: 'connectedAccounts', schema: ConnectedAccountSchema },
-            { name: 'user', schema: UserSchema },
-            { name: 'admin', schema: AdminSchema },
+            { name: 'ServiceProvider', schema: ServiceProviderSchema },
+            { name: 'User', schema: UserSchema },
+            { name: 'Admin', schema: AdminSchema },
+            { name: 'CountriesWithCodes', schema: CountriesWithCodeSchema },
+            { name: 'ConnectedAccounts', schema: ConnectedAccountSchema },
+            { name: 'TempOtp', schema: TempOtpSchema },
         ]),],
-    controllers: [UsertAuthController],
+    controllers: [UserAuthController],
     providers: [UserAuthService, UtilityService, ApiResponse, SendMail]
 })
 

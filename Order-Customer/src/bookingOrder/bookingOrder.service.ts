@@ -3,27 +3,22 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Response } from 'express';
 import * as moment from 'moment';
-import Stripe from 'stripe';
 import axios from 'axios';
 
-import {
-  CUSTOMER_PROFILE,
-  ORDER_RESCHEDULE_COUNT,
-  WEEKDAY_LIST,
-} from 'src/utils/constant';
-import { UtilityService } from 'src/utils/utility.service';
-import { ApiResponse } from 'src/utils/apiResponse.service';
-import { ServiceProviders } from 'src/schema/serviceProvider.schema';
-import { CancellationRules } from 'src/schema/cancellationRule.schema';
-import { CustomerTransactions } from 'src/schema/customerTransaction.schema';
-import { Notifications } from 'src/schema/notification.schema';
-import { Schedules } from 'src/schema/schedule.schema';
-import { Orders } from 'src/schema/order.schema';
-import { Users } from 'src/schema/user.schema';
-import { CustomerCarts } from 'src/schema/customerCart.schema';
-import { DeviceNotifications } from 'src/schema/deviceNotification.schema';
+import { CUSTOMER_PROFILE, ORDER_RESCHEDULE_COUNT, WEEKDAY_LIST } from '../utils/constant';
+import { UtilityService } from '../utils/utility.service';
+import { ApiResponse } from '../utils/apiResponse.service';
+import { ServiceProviders } from '../schema/serviceProvider.schema';
+import { CancellationRules } from '../schema/cancellationRule.schema';
+import { CustomerTransactions } from '../schema/customerTransaction.schema';
+import { Notifications } from '../schema/notification.schema';
+import { Schedules } from '../schema/schedule.schema';
+import { Orders } from '../schema/order.schema';
+import { Users } from '../schema/user.schema';
+import { CustomerCarts } from '../schema/customerCart.schema';
+import { DeviceNotifications } from '../schema/deviceNotification.schema';
 import { CancleOrderDto, ChangeStatusDto, ConfirmOtpServiceDto, CreateDirectOrderDto, CreateOrderDto, FilterDto, RebookingOrderDto } from './bookingOrder.dto';
-import { CurrentUserDto } from 'src/authentication/authentication.dto';
+import { CurrentUserDto } from '../authentication/authentication.dto';
 import { PaymentHandlerService } from '../utils/paymentHandler.service';
 
 @Injectable()
@@ -108,7 +103,7 @@ export class BookingOrderService {
           address_type: activeAddress.address_type ? activeAddress.address_type : null,
           lat: activeAddress.lat ? activeAddress.lat : null,
           lng: activeAddress.lng ? activeAddress.lng : null,
-          location: activeAddress.live_location ? activeAddress.live_location : null,
+          location: activeAddress.location ? activeAddress.location : null,
           state: activeAddress.state ? activeAddress.state : null,
           city: activeAddress.city ? activeAddress.city : null
         };
@@ -323,14 +318,15 @@ export class BookingOrderService {
       } else {
         return this.apiResponse.ErrorResponse(res, 'User not found', {})
       }
-    } catch (e) {
-      return this.apiResponse.ErrorResponseWithoutData(res, e.message);
+    } catch (err) {
+      return this.apiResponse.ErrorResponseWithoutData(res, err.message);
     }
   }
 
   async changeBookingStatus(chnageStatusBody: ChangeStatusDto, res: Response) {
-    const { order_id, stylist_id, status } = chnageStatusBody;
     try {
+      const { order_id, stylist_id, status } = chnageStatusBody;
+
       const orderInfo = await this.orderModel.findOne({ _id: order_id });
       if (orderInfo.booking_type === 1) {
         const initialDate = new Date(orderInfo.date);
@@ -352,14 +348,13 @@ export class BookingOrderService {
       let updateQuery = {};
       let notificationType = null;
       const stylistInfo = await this.serviceProviderModel.findOne({ _id: stylist_id }, { firstname: 1 });
-      if (status == '1') {
+      if (status === 1) {
         updateQuery = { booking_status: status, stylist_id: stylist_id, order_accepted_at: Math.floor(Date.now()) };
         notificationType = 'on_demand_request_accepted';
-      } else if (parseInt(status) === 2) {
+      } else if (status === 2) {
         updateQuery = { $set: { booking_status: status, stylist_id: stylist_id, reached_location_at: Math.floor(Date.now()) } };
         notificationType = 'stylist_reached_location';
-      } else if (parseInt(status) === 3) {
-        notificationType = 'stylist_started_service';
+      } else if (status === 3) {
         const orderUser = await this.userModel.findOne({ _id: orderInfo.user_id }, { phone_number: 1, country_code: 1 });
         if (!orderUser) {
           return this.apiResponse.ErrorResponseWithoutData(res, 'This user is not present in our db!');
@@ -378,7 +373,8 @@ export class BookingOrderService {
         };
 
         await this.orderModel.updateOne({ _id: order_id }, { $set: { start_service_otp: otp } });
-      } else if (parseInt(status) === 4) {
+        notificationType = 'stylist_started_service';
+      } else if (status === 4) {
         updateQuery = { $set: { booking_status: status, stylist_id: stylist_id, completed_at: Math.floor(Date.now()) } };
         notificationType = 'completed_order';
         const total_bill = orderInfo.bill_details.total_bill;
@@ -386,7 +382,7 @@ export class BookingOrderService {
 
         if (orderInfo.charge_id) await this.paymentHandlerService.capturePayment({ chargeId: orderInfo.charge_id });
         if (orderInfo.addons_charge_id) await this.paymentHandlerService.capturePayment({ chargeId: orderInfo.addons_charge_id });
-      } else if (parseInt(status) === 5) {
+      } else if (status === 5) {
         updateQuery = { $push: { order_rejected_by: stylist_id } };
         await this.notificationsModel.updateOne({ order_id: order_id, stylist_id: stylist_id }, { $set: { type: 'rejected' } });
       } else {
@@ -403,8 +399,8 @@ export class BookingOrderService {
       });
 
       await this.orderModel.updateOne({ _id: order_id }, updateQuery);
-      const responseObj = { status: parseInt(status) };
-      if (status == '2') {
+      const responseObj = { status: status };
+      if (status === 2) {
         return this.apiResponse.successResponseWithNoData(res, 'Otp sent!');
       } else {
         return this.apiResponse.successResponseWithData(res, 'Record updated', responseObj);
@@ -461,6 +457,7 @@ export class BookingOrderService {
           }
 
           const orderNumber = `HS${stylistType}-D${cityName}-${Date.now().toString().substring(0, 10)}`;
+
           let matchQuery = {};
           if (from_time && to_time) {
             matchQuery = {
@@ -528,7 +525,7 @@ export class BookingOrderService {
             };
           } else {
             createOrderObj = {
-              order_number: 'HST-' + Date.now(),
+              order_number: orderNumber,
               user_id: user._id,
               cart: customerCartInfo.cart_profiles,
               booking_type: booking_type,
@@ -541,6 +538,7 @@ export class BookingOrderService {
               created_at: Date.now(),
             };
           }
+
           const orderInfo = await this.orderModel.create(createOrderObj);
           const orderNotificationObj = {
             lat: activeAddress.lat,
@@ -606,7 +604,7 @@ export class BookingOrderService {
               user_id: user._id,
               order_id: orderInfo._id,
               amount: refundAmount,
-              message: '',
+              message: 'refund successfully',
               type: 'refund',
               transaction_type: 'addition',
             }
@@ -627,7 +625,7 @@ export class BookingOrderService {
               await this.customerTransactionModel.create(createObj);
               await this.userModel.findOneAndUpdate({ _id: user._id }, { wallet_balance: lessWalletAmount })
             } else {
-              throw new BadRequestException('No refund method available')
+              throw new BadRequestException('Invalid refund method')
             }
           }
 
@@ -659,11 +657,13 @@ export class BookingOrderService {
   async confirmOtpToStartService(startService: ConfirmOtpServiceDto, res: Response) {
     try {
       const { booking_id, stylist_id, otp } = startService;
+
       const orderInfo = await this.orderModel.findOne({ _id: booking_id });
       if (orderInfo) {
-        if (parseInt(orderInfo.start_service_otp) !== parseInt(otp)) {
+        if (parseInt(orderInfo.start_service_otp) !== otp) {
           return this.apiResponse.ErrorResponseWithoutData(res, 'Entered otp is wrong!');
         }
+
         const updateOrderData = {
           start_service_otp: null,
           booking_status: 3,
@@ -681,94 +681,93 @@ export class BookingOrderService {
     }
   }
 
-  async reBookingOrder(rebookingOrder: RebookingOrderDto, userAuth: CurrentUserDto, res: Response) {
+  async reBookingOrder(rebookingOrder: RebookingOrderDto, user: CurrentUserDto, res: Response) {
     try {
       const { order_id, stripe_customer_id, date, from_time, to_time } = rebookingOrder;
-      const user = await this.orderModel.findOne({ _id: order_id },
-        {
-          bill_details: 1,
-          reschedule_count: 1,
-          stylist_id: 1,
-          active_location: 1,
-          user_id: 1,
-          cart: 1,
-          booking_type: 1,
-          direct_order: 1,
-          date: 1,
-        },
+
+      const orderInfo = await this.orderModel.findOne({ _id: order_id }, {
+        bill_details: 1,
+        reschedule_count: 1,
+        stylist_id: 1,
+        active_location: 1,
+        user_id: 1,
+        cart: 1,
+        booking_type: 1,
+        direct_order: 1,
+        date: 1,
+      },
       );
-      const chrg = await this.paymentHandlerService.createCharge({ amount: user.bill_details.total_bill, customerId: stripe_customer_id });
-      if (!user) {
-        this.apiResponse.ErrorResponseWithoutData(res, 'Order not found!');
-        return;
-      }
-      if (user.reschedule_count >= ORDER_RESCHEDULE_COUNT) {
-        await this.orderModel.updateOne({ _id: order_id },
-          {
-            $set: {
-              cancelled_reason: 'reached maximum reschedule count',
-              booking_status: 6,
-            },
-          },
-        );
-        this.apiResponse.ErrorResponseWithoutData(res, 'Maximum reschedule count reached!');
-        return;
-      }
-      let details = {
-        order_number: 'HST-' + Date.now(),
-        bill_details: user.bill_details,
-        active_location: user.active_location,
-        user_id: user.user_id,
-        cart: user.cart,
-        booking_type: user.booking_type,
-        direct_order: user.direct_order,
-        date: user.date,
-        stripe_customer_id: stripe_customer_id,
-        charge_id: chrg.id ? chrg.id : '',
-        selected_slot: null,
-      };
-      if (date && from_time && to_time) {
-        if (user.booking_type === 1) {
-        } else {
-          throw new Error('Not a scheduled order');
+
+      if (orderInfo) {
+        const userInfo = await this.userModel.findOne({ _id: user._id });
+        const activeAdress = userInfo.addresses.find((elem) => elem.active);
+
+        const chargeInfo = await this.paymentHandlerService.createCharge({ amount: orderInfo.bill_details.total_bill, customerId: stripe_customer_id });
+        if (!orderInfo) {
+          this.apiResponse.ErrorResponseWithoutData(res, 'Order not found!');
+          return;
         }
-        details.date = date;
-        let slot = {
-          from_time: from_time,
-          to_time: to_time,
+        if (orderInfo.reschedule_count >= ORDER_RESCHEDULE_COUNT) {
+          await this.orderModel.updateOne({ _id: order_id },
+            {
+              $set: {
+                cancelled_reason: 'reached maximum reschedule count',
+                booking_status: 6,
+              },
+            },
+          );
+          this.apiResponse.ErrorResponseWithoutData(res, 'Maximum reschedule count reached!');
+          return;
+        }
+        const createOrderObj = {
+          order_number: 'HST-' + Date.now(),
+          bill_details: orderInfo.bill_details,
+          active_location: orderInfo.active_location,
+          user_id: orderInfo.user_id,
+          cart: orderInfo.cart,
+          booking_type: orderInfo.booking_type,
+          direct_order: orderInfo.direct_order,
+          date: orderInfo.date,
+          stripe_customer_id: stripe_customer_id,
+          charge_id: chargeInfo.id ? chargeInfo.id : null,
+          selected_slot: null,
         };
-        details.selected_slot = slot;
-      }
-      const result = await this.orderModel.create(details);
-      let userInfo = await this.userModel.findOne({ _id: userAuth._id });
-      let activeAdress = userInfo.addresses.find((elem) => elem.active)
-      let notificationType = {};
-      if (details.booking_type == 0) {
-        notificationType = { type: 'on_demand_booking' };
+
+        if (date && from_time && to_time) {
+          if (orderInfo.booking_type === 1) {
+          } else {
+            throw new BadRequestException('Not a scheduled order');
+          }
+          createOrderObj.date = date;
+          let slot = {
+            from_time: from_time,
+            to_time: to_time,
+          };
+          createOrderObj.selected_slot = slot;
+        }
+
+        const createdOrderInfo = await this.orderModel.create(createOrderObj);
+
+        const orderNotificationObj = {
+          lat: activeAdress.lat,
+          lng: activeAdress.lng,
+          full_name: userInfo.firstname || userInfo.lastname ? userInfo.firstname + ' ' + userInfo.lastname : '',
+          profile: userInfo.profile ? CUSTOMER_PROFILE + userInfo.profile : null,
+          booking_type: createOrderObj.booking_type == 0 ? 'on-demand' : 'on-scheduled',
+          created_at: `${createdOrderInfo.created_at}`,
+          user_id: userInfo._id,
+          notification_type: createOrderObj.booking_type == 0 ? 'on_demand_booking' : 'on_scheduled_booking',
+          total_price: `${createOrderObj.bill_details.total_bill}`,
+          order_id: createdOrderInfo._id ? createdOrderInfo._id : null,
+          is_custom: true,
+        };
+
+        await this.orderModel.updateOne({ _id: order_id }, { $inc: { reschedule_count: 1 } });
+
+        return await this.utilityService.sendNotificationToNearbyStylist(orderNotificationObj, res);
       } else {
-        notificationType = { type: 'on_scheduled_booking' };
+        return this.apiResponse.ErrorResponse(res, 'Order not found', {});
       }
-      const notificationInfo = await this.deviceNotificationModel.findOne(notificationType);
-      let data = {
-        lat: activeAdress.lat,
-        lng: activeAdress.lng,
-        full_name: userInfo.firstname || userInfo.lastname ? userInfo.firstname + ' ' + userInfo.lastname : '',
-        profile: userInfo.profile ? CUSTOMER_PROFILE + userInfo.profile : null,
-        booking_type: details.booking_type == 0 ? 'On-Demand Order' : 'Scheduled Order',
-        created_at: `${result.created_at}`,
-        token: userInfo.devices[0] ? userInfo.devices[0].token : '',
-        type: userInfo.devices[0] ? userInfo.devices[0].type : '',
-        user_id: userInfo._id,
-        title: notificationInfo.title,
-        body: notificationInfo.body,
-        notification_type: notificationInfo.type,
-        total_price: `${details.bill_details.total_bill}`,
-        order_id: result._id ? result._id : null,
-        is_custom: true,
-      };
-      await this.utilityService.sendNotificationToNearbyStylist(data, res);
-      await this.orderModel.updateOne({ _id: order_id }, { $inc: { reschedule_count: 1 } });
-      return this.apiResponse.successResponseWithData(res, 'Order created!', result);
     } catch (e) {
       console.log('e :>> ', e);
       return this.apiResponse.ErrorResponseWithoutData(res, e.message);

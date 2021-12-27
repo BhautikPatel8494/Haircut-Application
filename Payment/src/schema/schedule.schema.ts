@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Schema as MongooseSchema } from 'mongoose';
+import { Types } from 'mongoose';
 
 @Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } })
 export class ScheduleTimes {
@@ -41,11 +41,11 @@ export class Schedules {
   schedule_type: string;
 
   @Prop({
-    type: MongooseSchema.Types.ObjectId,
+    type: Types.ObjectId,
     ref: 'service_providers',
     required: true,
   })
-  stylist_id: MongooseSchema.Types.ObjectId;
+  stylist_id: string;
 
   @Prop({ type: Boolean, default: true })
   active: boolean;

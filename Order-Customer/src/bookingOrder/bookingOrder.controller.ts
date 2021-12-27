@@ -1,10 +1,10 @@
 import { Body, Controller, Post, Res } from '@nestjs/common';
 import { Response } from 'express';
 
-import { CurrentUser } from 'src/authentication/gaurd/user.decorator';
+import { CurrentUser } from '../authentication/gaurd/user.decorator';
 import { BookingOrderService } from './bookingOrder.service';
 import { CancleOrderDto, ChangeStatusDto, ConfirmOtpServiceDto, CreateDirectOrderDto, CreateOrderDto, FilterDto, RebookingOrderDto } from './bookingOrder.dto';
-import { CurrentUserDto } from 'src/authentication/authentication.dto';
+import { CurrentUserDto } from '../authentication/authentication.dto';
 
 @Controller('api')
 export class BookingOrderController {

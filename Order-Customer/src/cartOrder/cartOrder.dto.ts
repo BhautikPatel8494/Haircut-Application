@@ -1,7 +1,7 @@
 import { IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator";
 
 export class AddServiceToCartDto {
-    @IsOptional()
+    @IsNotEmpty()
     @IsString()
     type: string;
 
@@ -64,11 +64,6 @@ export class AddServiceToCartDto {
 }
 
 export class UpdateCartItemDto {
-
-    @IsString()
-    @IsOptional()
-    type: string;
-
     @IsString()
     @IsNotEmpty()
     profile_id: string;
@@ -77,11 +72,11 @@ export class UpdateCartItemDto {
     @IsOptional()
     cart_item_id: string;
 
-    @IsString()
+    @IsNumber()
     @IsNotEmpty()
     quantity: number
 
-    @IsString()
+    @IsNumber()
     @IsNotEmpty()
     price: number
 }

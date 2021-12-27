@@ -20,6 +20,9 @@ export class Admins {
     @Prop({ type: String, default: null })
     authy_id: string;
 
+    @Prop({ type: Boolean, default: true })
+    status: boolean;
+
     created_at: string;
     updated_at: string;
 }

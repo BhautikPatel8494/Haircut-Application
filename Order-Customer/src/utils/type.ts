@@ -1,4 +1,4 @@
-import { CartProfiles } from "src/schema/customerCart.schema";
+import { CartProfiles } from "../schema/customerCart.schema";
 
 export interface SendNotification {
     lat: any,

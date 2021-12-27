@@ -2,7 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Types } from 'mongoose';
 
 @Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } })
-class FamilyMembers {
+export class FamilyMembers {
   _id?: string;
 
   @Prop({ type: String, required: true })

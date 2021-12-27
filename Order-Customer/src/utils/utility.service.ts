@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import axios from 'axios';
@@ -6,11 +6,11 @@ import * as moment from 'moment';
 import * as schedule from "node-schedule"
 
 import { CUSTOMER_PROFILE } from './constant';
-import { Notifications } from 'src/schema/notification.schema';
-import { Orders } from 'src/schema/order.schema';
-import { Users } from 'src/schema/user.schema';
-import { Configs } from 'src/schema/config.schema';
-import { ServiceProviders } from 'src/schema/serviceProvider.schema';
+import { Notifications } from '../schema/notification.schema';
+import { Orders } from '../schema/order.schema';
+import { Users } from '../schema/user.schema';
+import { Configs } from '../schema/config.schema';
+import { ServiceProviders } from '../schema/serviceProvider.schema';
 import { SendNotification } from './type';
 import { Response } from 'express';
 import { ApiResponse } from './apiResponse.service';
@@ -159,10 +159,12 @@ export class UtilityService {
         console.log(result, 'this order not for junior and senior stylist');
       } else {
         let order_type = "";
-        if (data.booking_type == 'on-demand' || data.booking_type >= 'custom') {
+        if (data.booking_type == 'on-demand' || data.booking_type == 'custom') {
           order_type = 'on-demand';
         } else if (data.booking_type === 'on-scheduled') {
           order_type = 'scheduled';
+        } else {
+          throw new Error('Order type in valid')
         }
 
         const notification = {
@@ -218,7 +220,7 @@ export class UtilityService {
         if (data.is_custom && data.stylist_id === result._id.toString()) {
           await axios.post(process.env.NOTIFICATION_URL, {
             receiverId: result._id,
-            notification_type: 'direct_stylist_confirmation',
+            notification_type: 'on_custom_booking',
             extraData: {
               ...notification,
               stylist_firstname: result.firstname,

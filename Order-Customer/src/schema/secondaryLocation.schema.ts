@@ -8,7 +8,7 @@ export class SecondaryLocations {
         ref: 'locations',
         required: true,
     })
-    parent_location_id: Types.ObjectId;
+    parent_location_id: string;
 
     @Prop({ type: String, required: true })
     location_name: string;

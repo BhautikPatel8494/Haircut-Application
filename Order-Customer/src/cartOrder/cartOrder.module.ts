@@ -1,23 +1,23 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 
-import { ConfigSchema } from 'src/schema/config.schema';
-import { CustomerCartSchema } from 'src/schema/customerCart.schema';
-import { CustomServiceSchema } from 'src/schema/customService.schema';
-import { ServiceSchema } from 'src/schema/service.schema';
-import { UserSchema } from 'src/schema/user.schema';
-import { ApiResponse } from 'src/utils/apiResponse.service';
+import { ConfigSchema } from '../schema/config.schema';
+import { CustomerCartSchema } from '../schema/customerCart.schema';
+import { CustomServiceSchema } from '../schema/customService.schema';
+import { ServiceSchema } from '../schema/service.schema';
+import { UserSchema } from '../schema/user.schema';
+import { ApiResponse } from '../utils/apiResponse.service';
 import { CartOrderController } from './cartOrder.controller';
 import { CartOrderService } from './cartOrder.service';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
-      { name: 'customerCart', schema: CustomerCartSchema },
-      { name: 'customService', schema: CustomServiceSchema },
-      { name: 'service', schema: ServiceSchema },
-      { name: 'user', schema: UserSchema },
-      { name: 'config', schema: ConfigSchema },
+      { name: 'CustomerCart', schema: CustomerCartSchema },
+      { name: 'CustomService', schema: CustomServiceSchema },
+      { name: 'Service', schema: ServiceSchema },
+      { name: 'User', schema: UserSchema },
+      { name: 'Config', schema: ConfigSchema },
     ]),
   ],
   providers: [CartOrderService,ApiResponse],

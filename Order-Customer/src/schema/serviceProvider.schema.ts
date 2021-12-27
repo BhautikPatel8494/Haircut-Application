@@ -3,7 +3,6 @@ import { Types } from 'mongoose';
 
 @Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }, collection: 'service_providers' })
 export class ServiceProviders {
-
   @Prop({ type: String, required: true })
   firstname: string;
 
@@ -51,14 +50,14 @@ export class ServiceProviders {
     ref: 'categories',
     required: true,
   })
-  category: Types.ObjectId;
+  category: string;
 
   @Prop({
     type: Types.ObjectId,
     ref: 'categories.specialization',
     required: true,
   })
-  specialization: Types.ObjectId;
+  specialization: string;
 
   @Prop({
     type: String,
@@ -169,11 +168,14 @@ export class ServiceProviders {
   @Prop({ type: Object })
   live_location: {
     type: string;
-    coordinates: [];
+    coordinates: [0, 0];
   };
 
   @Prop({ type: Array, default: [] })
-  devices: [];
+  devices: [{
+    type: string;
+    token: string;
+  }];
 
   @Prop({ type: Number, enum: [0, 1], default: 0 })
   is_mobile_verified: number;
@@ -216,6 +218,9 @@ export class ServiceProviders {
   @Prop({ type: Boolean, default: false })
   deleted: boolean;
 
+  @Prop({ type: Number, default: null })
+  disable: number
+
   @Prop({ type: Array, default: [] })
   portfolio_videos: [];
 
@@ -225,8 +230,8 @@ export class ServiceProviders {
   @Prop({ type: String, default: null })
   access_token: string;
 
-  @Prop({ type: Number, default:null})
-  disable: number;
+  @Prop({ type: Number, default: 0 })
+  distance?: number;
 
   created_at: string;
   updated_at: string;

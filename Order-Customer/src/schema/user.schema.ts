@@ -204,9 +204,6 @@ export class Users {
   status: boolean;
 
   @Prop({ type: String, default: null })
-  access_token: string;
-
-  @Prop({ type: String, default: null })
   default_refund_method: string;
 
   @Prop({ type: Array, default: [] })

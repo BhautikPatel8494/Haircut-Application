@@ -1,9 +1,9 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { Schema as MongooseSchema } from 'mongoose';
+import { Types } from 'mongoose';
 
 @Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }, collection: 'connected_acounts' })
 export class ConnectedAccounts {
-    @Prop({ type: MongooseSchema.Types.ObjectId, required: true })
+    @Prop({ type: Types.ObjectId, required: true })
     stylist_id: string;
 
     @Prop({ type: Object, required: true })
